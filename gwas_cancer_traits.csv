@@ -1,0 +1,200 @@
+DISEASE.TRAIT,Grouping1,Grouping2,Theme1,Theme2,Theme3,Theme4,Theme5,Theme6,n
+Breast cancer specific mortality in breast cancer,Breast,-,Mortality,-,-,-,-,-,47
+Breast cancer specific mortality in estrogen receptor negative breast cancer,Breast,ER negative,Mortality,-,-,-,-,-,28
+Breast cancer specific mortality in estrogen receptor positive breast cancer,Breast,ER positive,Mortality,-,-,-,-,-,22
+Metastasis in stage I-III microsatellite instability low/stable colorectal cancer (time to event),Colorectal,-,Survival time,Metastasis,Microsatellite instability,-,-,-,26
+Severe skin toxicity response to cetuximab in colorectal cancer,Colorectal,-,Chemotherapy,Adverse effects,Skin toxicity,Cetuximab,-,-,8
+Ovarian cancer,Ovarian,-,-,-,-,-,-,-,56
+Nevus count or cutaneous melanoma,Melanoma,Cutaneous,Nevus count,-,-,-,-,-,30
+Cervical cancer,Cervical,-,-,-,-,-,-,-,39
+BRCA1/2-negative high-risk breast cancer,Breast,-,BRCA Neg,-,-,-,-,-,19
+Gastric cancer,Gastric,-,-,-,-,-,-,-,20
+Response to opioid analgesics in cancer (pain decrease),Cancer,-,Treatment response,Chemotherapy,-,-,-,-,2
+Response to tamoxifen in oestrogen receptor positive/HER2 negative breast cancer,Breast,-,Treatment response,-,-,-,-,-,2
+Glioblastoma (age-stratified),Glioblastoma,-,-,-,-,-,-,-,20
+Lung cancer,Lung,-,-,-,-,-,-,-,183
+Lung cancer in ever smokers,Lung,-,Interaction,Smoking,-,-,-,-,112
+Lung cancer (SNP x SNP interaction),Lung,-,Interaction,SNPxSNP,-,-,-,-,26
+Endometrial cancer,Endometrial,-,-,-,-,-,-,-,51
+Endometrial cancer (endometrioid histology),Endometrial,Endometrioid,-,-,-,-,-,-,32
+Endometrial cancer (Non-endometrioid histology),Endometrial,Non-endometrioid,-,-,-,-,-,-,7
+Lung cancer x radon exposure interaction (1df),Lung,-,Interaction,Radon exposure,-,-,-,-,3
+Mucinous adenocarcinoma in colorectal cancer,Colorectal,Mucinous,Adenocarcinoma,-,-,-,-,-,17
+Familial lung cancer,Lung,-,Familial,-,-,-,-,-,20
+Colorectal cancer,Colorectal,-,-,-,-,-,-,-,338
+Prostate cancer (advanced),Prostate,-,Advanced,-,-,-,-,-,18
+Prostate cancer (early onset),Prostate,-,Early onset,-,-,-,-,-,20
+Prostate cancer,Prostate,-,-,-,-,-,-,-,449
+Neuropathic pain in head and neck cancer,Head + Neck,-,Symptom,Neuropathic pain,-,-,-,-,4
+Hepatocellular carcinoma in hepatitis B infection,Liver,Hepatocellular carcinoma,Infection,Hepatitis B,-,-,-,-,11
+Non-glioblastoma glioma,Glioma,Non-glioblastoma,-,-,-,-,-,-,41
+Non-melanoma skin cancer,Skin,Non-melanoma,-,-,-,-,-,-,86
+Breast cancer and/or colorectal cancer,Breast,Colorectal,-,-,-,-,-,-,18
+Endometriosis or endometrial cancer (pleiotropy),Endometrial,-,Endometriosis,Pleiotropy,-,-,-,-,8
+Esophageal adenocarcinoma x smoking interaction,Head + Neck,Esophageal adenocarcinoma,Interaction,Smoking,-,-,-,-,2
+Esophageal adenocarcinoma x pack-years of smoking exposure interaction,Head + Neck,Esophageal adenocarcinoma,Interaction,Smoking,-,-,-,-,1
+Esophageal adenocarcinoma x gastroesophageal reflux disease interaction,Head + Neck,Esophageal adenocarcinoma,Interaction,Gastroesophageal reflux disease,-,-,-,-,3
+Premature menopause in childhood cancer survivors,Childhood,-,Adverse effect,Premature menopause,-,-,-,-,8
+Survival in breast cancer (estrogen-receptor positive),Breast,ER positive,Survival,-,-,-,-,-,2
+Survival in endocrine treated breast cancer (estrogen-receptor positive),Breast,ER positive,Survival,Treatment response,Endocrine,-,-,-,2
+Pancreatic cancer,Pancreatic,-,-,-,-,-,-,-,101
+Carboplatin disposition in epthelial ovarian cancer,Ovarian,Epithelial,Chemotherapy,Disposition,Carboplatin,-,-,-,18
+Paclitaxel disposition in epithelial ovarian cancer,Ovarian,Epithelial,Chemotherapy,Disposition,Paclitaxel,-,-,-,31
+Cancer,Cancer,-,-,-,-,-,-,-,43
+Taxane-induced peripheral neuropathy in breast cancer,Breast,-,Chemotherapy,Adverse effects,Peripheral neuropathy,Taxane,-,-,3
+Colorectal adenoma (advanced),Colorectal,Advanced adenoma,-,-,-,-,-,-,30
+Breast cancer,Breast,-,-,-,-,-,-,-,1200
+Breast cancer in childhood cancer survivors,Breast,Childhood,-,-,-,-,-,-,5
+Breast cancer in childhood cancer survivors treated with less than 10 gray radiotherapy,Breast,Childhood,Radiotherapy,Adverse effect,Cancer,-,-,-,3
+Breast cancer in childhood cancer survivors treated with more than 10 gray radiotherapy,Breast,Childhood,Radiotherapy,Adverse effect,Cancer,-,-,-,3
+Breast Cancer in BRCA1 mutation carriers,Breast,-,BRCA1,-,-,-,-,-,16
+Breast cancer (estrogen-receptor negative),Breast,ER negative,-,-,-,-,-,-,73
+Overall survival in serous epithelial ovarian cancer treated with paclitaxel and cisplatin,Ovarian,Serous,Treatment response,Chemotherapy,Chemotherapy,"Paclitaxel, Cisplatin",-,-,10
+Progression free survival in serous epithelial ovarian cancer treated with carboplatin and paclitaxel,Ovarian,Serous,-,-,-,-,-,-,4
+Neuroblastoma (11q deletion),Neuroblastoma,-,11q deletion,-,-,-,-,-,1
+Neuroblastoma (1p deletion),Neuroblastoma,-,1q deletion,-,-,-,-,-,1
+Neuroblastoma (MYCN amplification),Neuroblastoma,-,MCYN amplification,-,-,-,-,-,2
+Hepatocellular carcinoma in hepatitis C infection,Liver,Hepatocellular carcinoma,Infection,Hepatitis C,-,-,-,-,1
+Breast cancer (estrogen-receptor positive),Breast,ER positive,-,-,-,-,-,-,3
+Breast cancer (progesterone-receptor positive),Breast,PR positive,-,-,-,-,-,-,1
+Uveal melanoma,Melanoma,Uveal,-,-,-,-,-,-,2
+Cholangiocarcinoma in primary sclerosing cholangitis,Cholangiocarcinoma,-,Primary sclerosing cholangitis,-,-,-,-,-,1
+Colorectal carcinoma in primary sclerosing cholangitis,Colorectal,Carcinoma,Primary sclerosing cholangitis,-,-,-,-,-,1
+Cholangiocarcinoma in primary sclerosing cholangitis (time to event),Cholangiocarcinoma,-,Primary sclerosing cholangitis,-,-,-,-,-,3
+Change in LVEF in response to paclitaxel and trastuzumab in HER2+ breast cancer,Breast,HER2 positive,Treatment response,Chemotherapy,"Paclitaxel, Trastuzumab",-,-,-,6
+Differentiated thyroid cancer,Thyroid,-,Differentiated,-,-,-,-,-,10
+Papillary thyroid cancer,Thyroid,Papillary,-,-,-,-,-,-,9
+HER2 status in breast cancer,Breast,-,HER2 Status,-,-,-,-,-,1
+Lung cancer in never smokers,Lung,-,Interaction,Non-Smoking,-,-,-,-,23
+Survival in pancreatic cancer,Pancreatic,-,Survival,-,-,-,-,-,61
+Plasma estrone conjugates levels in resected early stage estrogen-receptor positive breast cancer,Breast,-,ER Pos,PR Pos,Early stage,Estrone,-,-,2
+Estrone conjugates/estrone ratio in resected early stage estrogen-receptor positive breast cancer,Breast,ER positive,Early stage,Estrone,-,-,-,-,1
+Estrone/androstenedione ratio in resected early stage-receptor positive breast cancer,Breast,Receptor positive,Early stage,Estrone,Androestenedione,-,-,-,14
+Plasma estrone levels in resected estrogen-receptor positive breast cancer,Breast,-,ER Pos,PR Pos,Early stage,Estrone,-,-,2
+Plasma androstenedione levels in resected early stage-receptor positive breast cancer,Breast,-,ER Pos,PR Pos,Early stage,Androestenedione,-,-,5
+Ovarian clear cell cancer,Ovarian,Clear cell,-,-,-,-,-,-,2
+Endometrioid ovarian cancer,Ovarian,Endometrioid,-,-,-,-,-,-,1
+Low-grade serous ovarian cancer,Ovarian,Serous,Low Grade,-,-,-,-,-,1
+Ovarian cancer in BRCA2 mutation carriers,Ovarian,-,BRCA2,-,-,-,-,-,2
+Ovarian cancer in BRCA1 mutation carriers,Ovarian,-,BRCA1,-,-,-,-,-,11
+Epithelial ovarian cancer,Ovarian,Epithelial,-,-,-,-,-,-,50
+Serous invasive ovarian cancer,Ovarian,Serous,Invasive,-,-,-,-,-,21
+Serous borderline ovarian cancer,Ovarian,Serous,Borderline,-,-,-,-,-,10
+High-grade serous ovarian cancer,Ovarian,Serous,High Grade,-,-,-,-,-,21
+Invasive epithelial ovarian cancer,Ovarian,Epithelial,Invasive,-,-,-,-,-,19
+Low-grade serous and serous borderline ovarian cancer,Ovarian,Serous,Low Grade,Borderline,-,-,-,-,12
+Colon cancer,Colorectal,Colon,-,-,-,-,-,-,2
+Gallbladder cancer,Gallbladder,-,-,-,-,-,-,-,7
+Melanoma,Melanoma,-,-,-,-,-,-,-,55
+Thyroid cancer,Thyroid cancer,-,-,-,-,-,-,-,22
+Hepatocellular carcinoma in post hepatitis C eradication by interferon therapy,Liver,Hepatocellular carcinoma,Infection,Post Hepatitis C,Interferon therapy,-,-,-,1
+Response to platinum-based neoadjuvant chemotherapy in cervical cancer,Cervical,-,Treatment response,Chemotherapy,Platinum,Neoadjuvant,-,-,3
+"B-cell malignancies (chronic lymphocytic leukemia, Hodgkin lymphoma or multiple myeloma) (pleiotropy)",B-cell,Leukemia,Lymphoma,Myeloma,Pleiotropy,-,-,-,20
+Multiple keratinocyte cancers,Skin,Non-melanoma,Keratinocyte,-,-,-,-,-,17
+Body mass index (change over time) in cancer,Cancer,-,BMI,-,-,-,-,-,1
+Body mass index (change over time) in lung cancer,Lung,-,BMI,-,-,-,-,-,3
+Body mass index (change over time) in gastrointestinal cancer,Gastric,Colorectal,BMI,-,-,-,-,-,3
+Body mass index (change over time) in gastrointestinal cancer or chronic obstructive pulmonary disease,Gastric,Colorectal,BMI,COPD,-,-,-,-,4
+Body mass index (change over time) in lung cancer or chronic obstructive pulmonary disease,Lung,-,BMI,COPD,-,-,-,-,5
+Body mass index (change over time) in cancer or chronic obstructive pulmonary disease,Cancer,-,BMI,COPD,-,-,-,-,3
+Estrogen receptor status in breast cancer,Breast,-,ER Status,-,-,-,-,-,1
+Estrogen receptor status in HER2 negative breast cancer,Breast,HER2 negative,ER Status,-,-,-,-,-,1
+Breast cancer-free interval (treatment with aromatase inhibitor),Breast,-,Chemoprevention,Disease free survival time,Aromatase inhibitor,-,-,-,1
+Oral cavity and pharyngeal cancer,Head + Neck,-,Oral cavity,Pharyngeal,-,-,-,-,10
+Oral cavity cancer,Head + Neck,-,Oral cavity,-,-,-,-,-,9
+Oropharynx cancer,Head + Neck,-,Oropharynx,-,-,-,-,-,17
+Colorectal cancer (alcohol consumption interaction),Colorectal,-,Interaction,Alcohol,-,-,-,-,2
+Response to radiotherapy in prostate cancer (overall toxicity),Prostate,-,Treatment response,Radiotherapy,-,-,-,-,16
+"Response to radiotherapy in prostate cancer (toxicity, urinary frequency)",Prostate,-,Treatment response,Radiotherapy,Adverse effects,Toxicity,Urinary frequency,-,11
+"Response to radiotherapy in prostate cancer (toxicity, decreased urine stream)",Prostate,-,Treatment response,Radiotherapy,Adverse effects,Toxicity,Decreased Urine Stream,-,8
+"Response to radiotherapy in prostate cancer (toxicity, rectal bleeding)",Prostate,-,Treatment response,Radiotherapy,Adverse effects,Toxicity,Rectal bleeding,-,6
+Bladder cancer,Bladder,-,-,-,-,-,-,-,32
+Cancer (pleiotropy),Cancer,-,Pleiotropy,-,-,-,-,-,26
+Survival in head and neck cancer,Head + Neck,-,Survival,-,-,-,-,-,1
+Docetaxel-induced peripheral neuropathy in metastatic castrate-resistant prostate cancer,Prostate,-,Chemotherapy,Adverse effects,-,-,-,-,12
+Response to carboplatin in ovarian cancer (MTT IC50),Ovarian,-,Treatment response,Chemotherapy,Carboplatin,-,-,-,2
+Response to carboplatin and paclitaxel in ovarian cancer (MTT IC50),Ovarian,-,Treatment response,Chemotherapy,"Carboplatin, Paclitaxel",-,-,-,2
+Response to carboplatin and paclitaxel in ovarian cancer (Caspase 3/7 EC50),Ovarian,-,Treatment response,Chemotherapy,"Carboplatin, Paclitaxel",-,-,-,3
+Response to paclitaxel in ovarian cancer (MTT IC50),Ovarian,-,Treatment response,Chemotherapy,Paclitaxel,MTT IC50,-,-,1
+Response to paclitaxel in ovarian cancer (Caspase 3/7 EC50),Ovarian,-,Treatment response,Chemotherapy,Paclitaxel,Caspase 3/7 EC50,-,-,2
+Colorectal cancer (oestrogen-progestogen hormone therapy interaction),Colorectal,-,Interaction,Oestrogen,Progestogen,Hormone therapy,-,-,1
+Non-cardia gastric cancer,Gastric,Non-cardia,-,-,-,-,-,-,8
+Colorectal or endometrial cancer,Colorectal,Endometrial,-,-,-,-,-,-,29
+Survival in colorectal cancer (distant metastatic),Colorectal,-,Survival,Metastasis,Distant,-,-,-,4
+Survival in colorectal cancer,Colorectal,-,Survival,-,-,-,-,-,1
+Survival in colorectal cancer (non-distant metastatic),Colorectal,-,Survival,Metastasis,Non-Distant,-,-,-,1
+Response to Pazopanib in cancer (hepatotoxicity),Cancer,-,Treatment response,Chemotherapy,Adverse effect,Toxicity,Liver,-,1
+Event free survival in diffuse large B-cell lymphoma treated with immunochemotherapy,Lymphoma,Diffuse B-cell,Treatment response,Event free survival,Immunochemotherapy,-,-,-,2
+Prostate cancer (survival),Prostate,-,Survival,-,-,-,-,-,4
+Anthracycline-induced cardiotoxicity in childhood cancer,Childhood,-,Chemotherapy,Adverse response,Toxicity,Anthacyline,-,-,2
+Cutaneous malignant melanoma,Melanoma,-,Cutaneous,-,-,-,-,-,16
+Progression free survival in metastatic colorectal cancer (CAPOX-B vs CAPOX-B plus cetuximab),Colorectal,-,Interaction,Chemotherapy,Treatment response,Progression free survival,"CAPOX-B, Cetuximab",NA,3
+Progression free survival in metastatic colorectal cancer (chemotherapy interaction),Colorectal,-,Interaction,Chemotherapy,Treatment response,Progression free survival,-,-,1
+Multiple myeloma (survival),Myeloma,-,Survival,-,-,-,-,-,1
+Cardia gastric cancer,Gastric,Cardia,-,-,-,-,-,-,1
+Gastric adenocarcinoma (histologically verified),Gastric,Adenocarcinoma,-,-,-,-,-,-,7
+Multiple myeloma and monoclonal gammopathy,Myeloma,-,Monoclonal gammopathy,-,-,-,-,-,9
+Obesity in adult survivors of childhood cancer exposed to cranial radiation,Childhood,-,Treatment response,Cranial radiation exposure,Obesity,-,-,-,4
+Obesity in adult survivors of childhood cancer not exposed to cranial radiation,Childhood,-,Treatment response,Cranial radiation exposure,Obesity,-,-,-,1
+Prostate cancer aggressiveness,Prostate,-,Agressiveness,-,-,-,-,-,3
+Breast cancer (survival),Breast,-,Survival,-,-,-,-,-,9
+Disease-free survival in breast cancer,Breast,-,Disease free survival time,-,-,-,-,-,2
+Survival in rectal cancer,Rectal,-,Survival,-,-,-,-,-,18
+Survival in colon cancer,Colorectal,-,Survival,-,-,-,-,-,12
+Survival in microsatellite instability low/stable colorectal cancer,Colorectal,-,Survival,Microsatellite instability,-,-,-,-,12
+Platinum-induced myelosuppression in non-small cell lung cancer,Lung,Non-small cell,Chemotherapy,Treatment response,Myelosupression,Platinum,-,-,1
+Colorectal cancer (aspirin and/or NSAID use interaction),Colorectal,-,Interaction,NSAID,-,-,-,-,2
+Colorectal cancer (calcium intake interaction),Colorectal,-,Interaction,Calcium intake,-,-,-,-,3
+Non-small cell lung cancer (survival),Lung,Non-small cell,Survival,-,-,-,-,-,6
+Response to chemotherapy in breast cancer (hypertension) (bevacizumab),Breast,-,Treatment response,Chemotherapy,Bevacizumab,-,-,-,3
+Response to chemotherapy in breast cancer hypertensive cases (cumulative dose) (bevacizumab),Breast,-,Treatment response,Chemotherapy,Bevacizumab,-,-,-,13
+Response to radiotherapy in prostate cancer (toxicity),Prostate,-,Treatment response,Radiotherapy,Adverse effects,Toxicity,-,-,1
+Glioma (high-grade),Glioma,High grade,-,-,-,-,-,-,6
+Urinary bladder cancer,Bladder,Urinary,-,-,-,-,-,-,7
+Response to radiotherapy in cancer (late toxicity),Cancer,-,Treatment response,Radiotherapy,-,-,-,-,10
+Colorectal cancer (diet interaction),Colorectal,-,Interaction,Diet,-,-,-,-,13
+Non-small cell lung cancer (recurrence rate),Lung,Non-small cell,Recurrence,-,-,-,-,-,2
+Bladder cancer (smoking interaction),Bladder,-,Interaction,Smoking,-,-,-,-,5
+Lung cancer (smoking interaction),Lung,-,Interaction,Smoking,-,-,-,-,2
+Breast cancer (early onset),Breast,Early onset,-,-,-,-,-,-,18
+Nasopharyngeal carcinoma (SNP x SNP interaction),Head + Neck,Nasopharyngeal carcinoma,Interaction,SNPxSNP,-,-,-,-,41
+"Breast cancer (estrogen-receptor negative, progesterone-receptor negative, and human epidermal growth factor-receptor negative)",Breast,Triple negative,-,-,-,-,-,-,5
+Digestive system disease (Barrett's esophagus and esophageal adenocarcinoma combined),Esophageal,Adenocarcinoma,?Other,-,-,-,-,-,10
+Lobular breast cancer (menopausal hormone therapy interaction),Breast,Lobular,Interaction,Hormone therapy,Menopause,-,-,-,2
+Breast cancer (menopausal hormone therapy interaction),Breast,-,Interaction,Hormone replacement therapy,Menopause,-,-,-,2
+Adverse response to chemotherapy in breast cancer (alopecia) (cyclophosphamide+epirubicin+/-5FU),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,3
+Adverse response to chemotherapy in breast cancer (alopecia) (cyclophosphamide+doxorubicin+/-5FU),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,8
+Adverse response to chemotherapy in breast cancer (alopecia) (paclitaxel),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,5
+Adverse response to chemotherapy in breast cancer (alopecia) (docetaxel),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,4
+Adverse response to chemotherapy in breast cancer (alopecia) (anti-microtubule),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,7
+Adverse response to chemotherapy in breast cancer (alopecia),Breast,-,Chemotherapy,Adverse response,Hair Loss,-,-,-,3
+Esophageal squamous cell cancer (length of survival),Head + Neck,Esophageal squamous cell,Survival time,-,-,-,-,-,1
+Breast cancer in BRCA2 mutation carriers,Breast,-,BRCA2,-,-,-,-,-,6
+Estradiol plasma levels (breast cancer),Breast,-,Estradiol plasma levels,-,-,-,-,-,18
+Multiple myeloma (IgH translocation),Myeloma,-,IgH Translocation,-,-,-,-,-,25
+Multiple myeloma (hyperdiploidy),Myeloma,-,Hyperdiploidy,-,-,-,-,-,14
+Response to irinotecan and platinum-based chemotherapy in non-small-cell lung cancer,Lung,Non-small cell,Treatment response,Chemotherapy,"Irinotecan, Platinum",-,-,-,7
+Urinary symptoms in response to radiotherapy in prostate cancer,Prostate,-,Adverse effects,Radiotherapy,Urinary sypmtoms,-,-,-,1
+Breast cancer (prognosis),Breast,-,Prognosis,-,-,-,-,-,5
+Colorectal cancer (SNP x SNP interaction),Colorectal,-,Interaction,SNPxSNP,-,-,-,-,7
+Non-small cell lung cancer,Lung,Non-small cell,-,-,-,-,-,-,17
+Lung Cancer (DNA repair capacity),Lung,-,DNA Repair,NA,-,-,-,-,2
+"Multiple cancers (lung cancer, gastric cancer, and squamous cell carcinoma)",Lung,Gastric,Squamous cell,-,-,-,-,-,7
+Breast cancer (male),Breast,Male,-,-,-,-,-,-,3
+Esophageal cancer  (alcohol interaction),NA,NA,NA,NA,NA,NA,NA,NA,NA
+Esophageal cancer (squamous cell),Head + Neck,Esophageal squamous cell,-,-,-,-,-,-,7
+Response to platinum-based chemotherapy in non-small-cell lung cancer,Lung,Non-small cell,Treatment response,Chemotherapy,Platinum,-,-,-,6
+Response to irinotecan in non-small-cell lung cancer,Lung,Non-small cell,Treatment response,Chemotherapy,Irinotecan,-,-,-,2
+Lung cancer (asbestos exposure interaction),Lung,-,Interaction,Asbestos,-,-,-,-,2
+Response to gemcitabine in pancreatic cancer,Pancreatic,-,Treatment response,Chemotherapy,Gemcitabine,-,-,-,5
+Prostate cancer (SNP x SNP interaction),Prostate,-,Interaction,SNPxSNP,-,-,-,-,51
+Response to tamoxifen in breast cancer,Breast,-,Treatment response,-,-,-,-,-,1
+Insulinoma-associated antigen 2 autoantibody levels in type 1 diabetes,Pancreatic,Insulinoma,Antigen-2 Autoantibody,Type 1 Diabetes,-,-,-,-,1
+Esophageal cancer,Head + Neck,-,-,-,-,-,-,-,13
+Testicular cancer,Testicular,-,-,-,-,-,-,-,3
+Small-cell lung cancer (survival),Lung,Small cell,Survival,-,-,-,-,-,1
+Erectile dysfunction and prostate cancer treatment,Prostate,-,Treatment response,Adverse effects,Erectile dysfunction,-,-,-,23
+Esophageal cancer and gastric cancer,Head + Neck,Gastric,-,-,-,-,-,-,4
+Testicular germ cell cancer,Testicular,Germ cell,-,-,-,-,-,-,6
+"Thyroid cancer (Papillary, radiation-related)",Thyroid,Papillary,Radiation-related,-,-,-,-,-,1
+Neuroblastoma (high-risk),Neuroblastoma,-,High-risk,-,-,-,-,-,1

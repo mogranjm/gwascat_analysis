@@ -1,0 +1,457 @@
+---
+title: "Extract records of interest from the EBI GWAS Catalog"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE}
+suppressPackageStartupMessages(library(gwascat))
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(stringr))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(httr))
+
+# Unique developer key used when interacting with the NCBI eutils API
+Sys.setenv(ncbi_api_key = "d96bb10ffdca4cfb6ad3c963ba2e9f155d09")
+```
+
+```{r fake setup, eval=FALSE}
+library(gwascat)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+library(httr)
+
+gwas_data <- read.delim("gwas_cat_data.tsv")
+```
+
+```{r data, echo=FALSE}
+# read_delim a large TSV document from http://www.ebi.ac.uk/gwas/api/search/downloads/alternative
+# THIS WILL TAKE A LONG TIME
+
+# current_gwas_data <- makeCurrentGwascat()
+# ?makeCurrentGwascat
+
+# Or just read in a local version (updated: 21/Apr/2019, downloaded: 10/May/2019)
+gwas_data <- read.delim("data/gwas_catalog_v1.0.2-associations_e96_r2019-04-21.tsv", 
+                        stringsAsFactors = FALSE)
+
+# Use this if you're prototyping
+# data("ebicat38") # Archive image dated 3 August 2015
+```
+
+# GWAS Catalog Dataset
+```{r}
+gwas_data
+```
+
+## Structure
+The GWAS Catalog is a large dataset (134,314x38) with records representing disease associated SNPs identified through Genome Wide Association Studies. Each table row represents a Single Nucleotide Polymorphism associated with a given disease trait. Lots of papers report multiple SNPs, so each paper tends to be replicated in a many-to-one table relationship style.
+
+Each record contains information about the SNP of interest:
+
+* Details of the publication in which it is reported
+    + Study Title,
+    + PubMed Id,
+    + Date Published,
+    + First Author,
+    + Journal Name,
+    + NCBI Link,
+* Details of the condition it is associated with 
+    + DISEASE.TRAIT, 
+    + Risk allele, [SNP_ID]-[Risk_Associated_Nucleotide]
+    + Associated Risk (Odds Ratio or Beta coefficient, including p-value & 95% CI)
+    + Sample Size, etc...
+* Details of the genetic locus at which it resides 
+    + SNP ID,
+    + Chromosome,
+    + Genomic Region, (p/q notation),
+    + Chromosomal Position, (Nucleotide index),
+    + Related Genes,
+    + Variant Context, (SNP Functional class - exon/missense/non-coding/etc)
+    + Platform (Genotyping platform manufacturer used in Stage 1)
+    
+
+### Reducing the dataset
+First we need to reduce the full GWAS Catalog [data dictionary here](https://www.ebi.ac.uk/gwas/docs/fileheaders) down to include only cancer related records.
+
+Once this is done, each record will be assessed and categorised based on a thematic analysis of the study title.
+
+The intent here is to isolate only those records that have some kind of relevance to cancer. This will be done by filtering for cancer-like keywords in the DISEASE.TRAIT field.
+
+#### Positive RegEx matches (include)
+* "cancer"
+    + Match the pattern "cancer"
+* "oma[^\\w]"
+    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
+    + Included: Melan**oma**, Carcin**oma**, etc...
+    + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic 
+    + **NOTE:** *Need to validate that no cancer records are excluded*
+```{r RegEx include}
+data <- gwas_data %>% 
+    as_tibble() %>%
+    filter(
+        str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma[^\\w]")
+    )
+```
+
+#### Negative RegEx matches (exclude)
+* "glaucoma"
+    + Exclude the pattern "glaucoma"
+    + Glaucoma is a degenerative eye syndrome characterised by vision loss as a result of damage to the optic nerve (not cancer).
+* "tripanosoma"
+    + Exclude the pattern "tripanosoma"
+    + Tripanosoma is a genus of parasitic protozoa (not cancer).
+* "hematoma"
+    + Exclude the pattern "hematoma"
+    + A hematoma is an abnormal collection of blood  external to the circulatory system (a more serious form of bruise) caused by the leakage of blood from a *large* blood vessel (not cancer).
+
+```{r RegEx exclude}
+data <- filter(
+    data,
+    !str_detect(DISEASE.TRAIT, fixed("glaucoma", ignore_case = TRUE)),
+    !str_detect(DISEASE.TRAIT, fixed("tripanosoma", ignore_case = TRUE)),
+    !str_detect(DISEASE.TRAIT, fixed("hematoma", ignore_case = TRUE))
+    ) %>%
+    arrange(desc(PUBMEDID))
+```
+
+Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
+
+#### Thematic Analysis
+Although we've reduced our dataset to cancer-related records, this includes a wide spectrum of traits.
+
+For example, there are SNPs that predict cancer risk (these are the ones we're primarily looking for), but these are often in the context of a particular disease type/subtype or causative characteristic. It is important to stratify these.
+
+In addition, there are SNPs that predict prognosis, treatment response, adverse effects, confounding interactions, etc. Suffice to say that there are many more considerations to make before we begin to analyse the disease associations.
+
+This dataset is again reduced, this time to unique records. This dataframe is exported to CSV for classification via thematic analysis (using Excel)
+```{r}
+data #%>% 
+    distinct(DISEASE.TRAIT) #%>% 
+    left_join(traits) %>% 
+    readr::write_csv("gwas_cancer_traits.csv")
+```
+
+```{r}
+data %>% filter(
+    str_detect(DISEASE.TRAIT, "recurrence rate")
+) %>% 
+    distinct(STUDY,.keep_all = T) %>%
+    arrange(DISEASE.TRAIT)
+
+data %>% 
+    # filter(str_detect(DISEASE.TRAIT, fixed('adenoma', ignore_case = T))) %>% 
+    # filter(str_detect(MAPPED_TRAIT, fixed('neoplasm', ignore_case = T))) #%>%
+    count(MAPPED_TRAIT)
+```
+
+
+```{r}
+traits <- readr::read_csv("gwas_cancer_traits_in.csv") %>% 
+    mutate(`Cancer Subtype` = ifelse(is.na(`Cancer Subtype`), 'Not Specified', `Cancer Subtype`))
+```
+
+```{r fig.height=70, fig.width=100}
+traits_count <- traits %>%
+    group_by(`Cancer Class`, `Cancer Subtype`) %>% 
+    mutate(new_n = sum(n)) %>% 
+    ungroup %>% 
+    distinct(`Cancer Class`, `Cancer Subtype`, .keep_all = TRUE) %>% 
+    select(`Cancer Class`, `Cancer Subtype`, Count = new_n) %>% 
+    # count(Grouping1) %>% 
+    arrange(`Cancer Class`)
+
+traits_count %>% 
+    ggplot(aes(x = `Cancer Subtype`, y = Count, fill = `Cancer Subtype`)) +
+    geom_bar(stat='identity') +
+    facet_wrap(~`Cancer Class`, scales = 'free_x') +
+    theme(legend.position = "none") 
+
+ggsave('test.png', device = 'png', height=60, width=100, limitsize = FALSE)
+
+
+```
+
+
+```{r}
+data %>% 
+    count(DISEASE.TRAIT) #%>% 
+    left_join(traits) %>% 
+    readr::write_csv("gwas_cancer_traits.csv")
+```
+
+```{r fig.width=80, fig.height=20 }
+plot <- plot_data %>% 
+    # count(DISEASE.TRAIT, SNPS) %>% 
+    count(DISEASE.TRAIT) %>%
+    ggplot() +
+        theme(
+           legend.position = "none"
+        ) +
+        coord_flip()
+
+plot +
+    geom_col(
+        aes(
+            x = reorder(DISEASE.TRAIT,desc(n)),
+            # x = DISEASE.TRAIT,
+            y = n,
+            fill = DISEASE.TRAIT)
+    )
+
+ggsave('plot2.png', 
+       width = 80,
+       height = 60,
+       units = 'cm') 
+       
+```
+
+
+### Need to check:
+* Should we be including those records that reference "interaction"?
+    + ALT: Potentially add at a later date when taking lifestyle modifiers into account.
+* Should be include effects on carriers of High/Mod risk variants (if available)?
+* Are we interested in other cancers than those targeted?
+    + Cervical
+    + Endomedrial
+    + Gastric
+    + Pancreatic
+    + Thyroid
+* What P-value threshold to use
+    + ?Use $`r 5e-8`$
+* If multiple associations recorded for a variant, how do we approach different statistics?
+    + eg: rs17694493
+
+# Get Publication data from PubMed via API
+
+## Define function to generate API URL
+```{r functions to generate API URLs}
+eutil_fetch_url_generator <- function(db, ids, rettype = NULL, retmode = NULL, api_key = NULL){
+    
+    # URL Generator for the NCBI entrez programming utility API 
+    
+    # Args:
+        # db - Name of Ensembl Database to be queried
+            # eg:PubMed, PMC
+        # ids - A single string containing a comma separated list of identifiers used to query the selected database
+        # retmode - "Return mode" Format for the data query to be returned
+        # rettype - "Return type"
+    
+    # Example output: 
+    # https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?db=pubmed&id=25824743&retmode=xml
+    # Returns an XML page containing data for the PubMed record with PUBMEDID #25824743
+
+    # The base URL for the NCBI eutil tool
+    url <- 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/efetch.fcgi?'
+
+    # Configure Database to query based on declared variable 'db'
+    db_string <- paste0('db=', db)
+
+    # Configure API query
+        # Database ID string
+    id_string <- paste0('&id=', ids)
+
+        # API Return type
+    if(!is.null(rettype)){
+        rettype_string <- paste0('&rettype=', rettype)
+    } else {
+        rettype_string <- ""
+    }
+    
+        # API Return mode
+    if(!is.null(retmode)){
+        retmode_string <- paste0('&retmode=', retmode)
+    } else {
+        retmode_string <- ""
+    }
+    
+        # API Key
+    if(!is.null(api_key)){
+        api_string <- paste0('&api_key=', api_key)
+    } else {
+        print("Warning, no API key provided")
+        api_string <- ""
+    }
+    
+    # Concatenate API Query strings into URL
+    GET_url <- paste0(url, db_string, id_string, rettype_string, retmode_string, api_string)
+    
+    return(GET_url)
+}
+
+
+eutil_link_url_generator <- function(eutil, dbfrom, db, ids){
+    # URL Generator for the NCBI entrez programming utility API 
+    
+    # Args:
+        # dbfrom - Name of Ensembl Database to be referred to
+        # db - Name of Ensembl Database to be queried
+            # PubMed
+        # ids - A single string containing a comma separated list of primary keys of records in the dbfrom database
+    
+    # Example output: 
+    # https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?dbfrom=pubmed&db=pmc&id=25824743
+    # Returns an XML page containing PMC data related to the PubMed record with PUBMEDID #25824743
+
+    # The base URL for the NCBI eutil tool
+    url <- 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/elink.fcgi?'
+
+    # Configure Database relationships
+        # Define reference database
+    dbfrom_string <- paste0('dbfrom=', dbfrom)
+
+        # Define request database
+    db_string <- paste0('&db=', db)
+    
+        # Configure reference database IDs string
+    id_string <- paste0('&id=', ids)
+
+    # Concatenate API Query strings into URL
+    GET_url <- paste0(url, dbfrom_string, db_string, id_string)
+    
+    return(GET_url)
+}
+```
+
+## Query PubMed via NCBI API to get MEDLINE data for all target publications
+```{r GET MEDLINE data for all target PubMed references}
+# Get a list of unique PubMed IDs
+gwas_ids <- gwas_data %>% 
+    distinct(PUBMEDID, .keep_all = TRUE)
+
+# Concatenate all SNP IDs associated with a given PUBMEDID into a single record for that PUBMEDID
+gwas_data <- gwas_data %>% 
+    group_by(PUBMEDID) %>% 
+    mutate(SnpCnt = paste0("SNP_",row_number())) %>% 
+    data.table::setDT() %>% 
+    data.table::dcast.data.table(
+        PUBMEDID ~ SnpCnt,
+        value.var = "SNPS",
+        fill = NA,
+        drop = TRUE
+    ) %>% 
+    tidyr::unite(SNPS, -PUBMEDID, sep=",") %>% 
+    mutate(
+        SNPS = str_replace_all(SNPS, "[NA,]+", ", "),
+        SNPS = substr(SNPS, 1, nchar(SNPS)-2)
+        ) %>%
+    inner_join(
+        distinct(gwas_data, PUBMEDID, .keep_all = TRUE), 
+        by = "PUBMEDID"
+        ) %>% 
+    select(PUBMEDID, SNPS = SNPS.x, DISEASE.TRAIT)
+
+# Generate URL for API using those unique PUBMEDIDs
+fetch_url <- eutil_fetch_url_generator(
+    db='pubmed',
+    ids=paste(gwas_ids$PUBMEDID, collapse=','),
+    rettype='medline',
+    api_key=Sys.getenv('ncbi_api_key')
+)
+
+# Submit HTTP GET Request, save Response
+r <- GET(fetch_url)
+
+# Save raw (hex) HTTP Response stream (Medline formatted reference data) to plain text file
+writeBin(content(r, 'raw'), 'medline.txt')
+```
+
+```{r Add custom content fields to Medline dataset}
+# Read plain Medline text back in
+medline_txt <- readLines("medline.txt")
+
+# Loop through each entry and add custom EndNote fields:
+    # "Label" (ED), - Notes the GWAS associated DISEASE.TRAIT
+    # "Research Note" - Notes that this record was extracted from the GWAS catalog
+    # "Target Detail" (CP) - Contains SNP ids
+
+for(id in 1:length(gwas_data$PUBMEDID)){
+    medline_txt <- rsed::sed_insert(
+        stream = medline_txt,
+        after = paste0("PMID- ", gwas_data$PUBMEDID[id]),
+        insertion = paste0("ED  - ", gwas_data$DISEASE.TRAIT[id], "\n", 
+                           "EP  - Extracted from GWAS Catalog", "\n",
+                           "CP  - ", gwas_data$SNPS[id])
+    )
+}
+
+# Clean up after for loop
+rm(id)
+
+# Write updated Medline data to file
+writeLines(medline_txt, 'medline.txt')
+```
+
+```{r GET PubMedC PDF documents}
+base_ftp_url <- "ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/"
+
+# Load Open Access dataset
+oa_files <- readr::read_csv("data/oa_file_list.csv")
+
+# Isolate target publications & generate URL for each one
+target_files <- oa_files %>%
+    filter(PMID %in% gwas_ids$PUBMEDID) %>%
+    mutate(File = paste0(base_ftp_url, File),
+           as.character(PMID))
+
+if(!file.exists("downloads")){
+    dir.create("downloads")
+}
+
+# Download PMC archive files
+purrr::map2(target_files$File,
+            paste0("downloads/", target_files$PMID, ".tar.gz"),
+            download.file)
+
+if(!file.exists("downloads/extracts")){
+    dir.create("downloads/extracts")
+    }
+
+# Extract PDFs from archive
+purrr::map(paste0("downloads/", target_files$PMID, ".tar.gz"),
+           untar,
+           files = "*.pdf$",
+           exdir = "downloads/extracts")
+
+# Rename PDFs to PMCID and move to a single folder
+for (dir in list.dirs("downloads/extracts", recursive = FALSE)){
+
+    iter = 0
+
+    for (file in list.files(dir)){
+        
+        filepath <- paste0(dir, "/", file)
+
+        if(iter == 0){
+            file.rename(
+                filepath,
+                paste0("refs/pdfs/", str_extract(dir, "PMC[\\d]+$"), ".pdf")
+            )
+        } else {
+            file.rename(
+                filepath,
+                paste0("refs/pdfs/", str_extract(dir, "PMC[\\d]+$"), "_", iter, ".pdf")
+            )
+        }
+
+        iter = iter + 1
+    }
+}
+
+# Clean up after for loop
+rm(dir, file, filepath, iter)
+
+# Delete archive files & extract folders
+
+list.files(
+    "downloads",
+    recursive = TRUE,
+    include.dirs = FALSE, 
+    full.names = TRUE
+) %>%  
+    file.remove()
+
+```
