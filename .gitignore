@@ -2,6 +2,7 @@
 # Project files
 .Rproj.user
 data/
+refs/
 
 # User specific files
 .Ruserdata
