@@ -1,5 +1,7 @@
+
 # Project files
 .Rproj.user
+data/
 
 # User specific files
 .Ruserdata
