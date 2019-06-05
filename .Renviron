@@ -1,0 +1,13 @@
+PATH=/mnt/anaconda/3/envs/gwasenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:
+
+LD_LIBRARY_PATH=/mnt/anaconda/3/envs/gwasenv/lib
+#:/usr/lib64/R/lib:/lib:/usr/lib/jvm/jre/lib/amd64/server:/usr/lib/jvm/jre/lib/amd64:/usr/lib/jvm/java/lib/amd64:/usr/java/packages/lib/amd64:/lib:/usr/lib
+
+CONDA_EXE=/mnt/anaconda/3/bin/conda
+CONDA_PYTHON_EXE=/mnt/anaconda/3/envs/gwasenv/bin/python3
+RETICULATE_PYTHON=/mnt/anaconda/3/envs/gwasenv/bin/python3
+
+R_LIBS=/mnt/anaconda/3/envs/gwasenv/lib/R/library/
+R_LIBS_USER=""
+R_LIBS_SITE=""
+#R_HOME=/mnt/anaconda/3/envs/gwasenv/lib/R
