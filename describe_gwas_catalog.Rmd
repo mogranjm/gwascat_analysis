@@ -1,0 +1,197 @@
+---
+title: "Extract records of interest from the EBI GWAS Catalog"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+```{r setup, echo=FALSE}
+reticulate::use_condaenv('gwasenv')
+```
+
+```{r fake setup, eval=FALSE}
+# Libraries used in this analysis
+library(gwascat)
+library(readr)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+```
+
+```{r Get live data, echo=FALSE}
+source('refresh_gwas_dataset.R')
+```
+
+# GWAS Catalog Dataset
+```{r}
+gwas_data
+```
+
+## Structure
+The GWAS Catalog is a large dataset (134,314x38) with records representing disease associated SNPs identified through Genome Wide Association Studies. Each table row represents a Single Nucleotide Polymorphism associated with a given disease trait. Lots of papers report multiple SNPs, so each paper tends to be replicated in a many-to-one table relationship style.
+
+Each record contains information about the SNP of interest:
+
+* Details of the publication in which it is reported
+    + Study Title,
+    + PubMed Id,    + Date Published,
+    + First Author,
+    + Journal me,
+    + NCBI Link,
+* Details of the condition it is associated with 
+     + DISEASETRAIT, 
+    + Risk allele, [SNP_ ID]-[Risk_Associated_Nucleotide]
+    + Associated Risk (Odds Ratio or Beta coefficient, including p-value & 95% CI)
+    + Sample Size, etc...
+* Details of the. genetic locus at which it resides 
+    + SNP ID,
+    + Chromosome,
+    + Genomic Region, (p/q notation),
+    + Chromosomal Position, (Nucleotide index),
+    + Related Genes,
+    + Variant Context, (SNP Functional class - exon/missense/non-coding/etc)
+    + Platform (Genotyping platformI manufacturer used in Stage 1)
+    
+
+### Reducing the dataset
+First we need to reduce the full GWAS Catalog [data dictionary here](https://www.ebi.ac.uk/gwas/d.  ocs/fileheaders) down to include only cancer related records.
+
+Once this is done, each record will be assessed and categorised based on a thematic analysis of the study title.
+
+The intent here is to isolate only those records that have some kind of relevance to cancer. This will be done by filtering for cancer-like keywords in the DISEASE.TRAIT field.
+
+#### Positive RegEx matches (include)
+* "cancer"
+    + Match the pattern "cancer"
+* "oma[^\\w]"
+    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
+    + Included: Melan**oma**, Carcin**oma**, etc...
+    + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic 
+    + **NOTE:** *Need to validate that no cancer records are excluded*
+
+#### Negative RegEx matches (exclude)
+* "glaucoma"
+    + Exclude the pattern "glaucoma"
+    + Glaucoma is a degenerative eye syndrome characterised by vision loss as a result of damage to the optic nerve (not cancer).
+* "tripanosoma"
+    + Exclude the pattern "tripanosoma"
+    + Tripanosoma is a genus of parasitic protozoa (not cancer).
+* "hematoma"
+    + Exclude the pattern "hematoma"
+    + A hematoma is an abnormal collection of blood  external to the circulatory system (a more serious form of bruise) caused by the leakage of blood from a *large* blood vessel (not cancer).
+
+```{r}
+source('functions/select_gwas_cancer.R')
+extract_cancer_data(gwas_data)
+```
+
+Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
+
+#TODO
+#### Describe Catalog - Pre Clustering
+
+#### Thematic Analysis
+Although we've reduced our dataset to cancer-related records, this includes a wide spectrum of traits.
+
+For example, there are SNPs that predict cancer risk (these are the ones we're primarily looking for), but these are often in the context of a particular disease type/subtype or causative characteristic. It is important to stratify these.
+
+In addition, there are SNPs that predict prognosis, treatment response, adverse effects, confounding interactions, etc. Suffice to say that there are many more considerations to make before we begin to analyse the disease associations.
+
+This dataset is again reduced, this time to unique records. This dataframe is exported to CSV for classification via title analysis (using Excel)
+
+```{r}
+data #%>% 
+    distinct(DISEASE.TRAIT) #%>% 
+    left_join(traits) %>% 
+    readr::write_csv("data/gwas_cancer_traits.csv")
+```
+
+```{r}
+data %>% filter(
+    str_detect(DISEASE.TRAIT, "recurrence rate")
+) %>% 
+    distinct(STUDY,.keep_all = T) %>%
+    arrange(DISEASE.TRAIT)
+
+data %>% 
+    # filter(str_detect(DISEASE.TRAIT, fixed('adenoma', ignore_case = T))) %>% 
+    # filter(str_detect(MAPPED_TRAIT, fixed('neoplasm', ignore_case = T))) #%>%
+    count(MAPPED_TRAIT)
+```
+
+
+```{r}
+traits <- readr::read_csv("data/gwas_cancer_traits_labelled.csv") %>% 
+    mutate(`Cancer Subtype` = ifelse(is.na(`Cancer Subtype`), 'Not Specified', `Cancer Subtype`))
+```
+
+```{r fig.height=70, fig.width=100}
+traits_count <- traits %>%
+    group_by(`Cancer Class`, `Cancer Subtype`) %>% 
+    mutate(new_n = sum(n)) %>% 
+    ungroup %>% 
+    distinct(`Cancer Class`, `Cancer Subtype`, .keep_all = TRUE) %>% 
+    select(`Cancer Class`, `Cancer Subtype`, Count = new_n) %>% 
+    # count(Grouping1) %>% 
+    arrange(`Cancer Class`)
+
+traits_count %>% 
+    ggplot(aes(x = `Cancer Subtype`, y = Count, fill = `Cancer Subtype`)) +
+    geom_bar(stat='identity') +
+    facet_wrap(~`Cancer Class`, scales = 'free_x') +
+    theme(legend.position = "none") 
+
+ggsave('test.png', device = 'png', height=60, width=100, limitsize = FALSE)
+
+
+```
+
+
+```{r}
+data %>% 
+    count(DISEASE.TRAIT) #%>% 
+    left_join(traits) %>% 
+    readr::write_csv("gwas_cancer_traits.csv")
+```
+
+```{r fig.width=80, fig.height=20 }
+plot <- plot_data %>% 
+    # count(DISEASE.TRAIT, SNPS) %>% 
+    count(DISEASE.TRAIT) %>%
+    ggplot() +
+        theme(
+           legend.position = "none"
+        ) +
+        coord_flip()
+
+plot +
+    geom_col(
+        aes(
+            x = reorder(DISEASE.TRAIT,desc(n)),
+            # x = DISEASE.TRAIT,
+            y = n,
+            fill = DISEASE.TRAIT)
+    )
+
+ggsave('plot2.png', 
+       width = 80,
+       height = 60,
+       units = 'cm') 
+       
+```
+
+### Need to check:
+* Should we be including those records that reference "interaction"?
+    + ALT: Potentially add at a later date when taking lifestyle modifiers into account.
+* Should be include effects on carriers of High/Mod risk variants (if available)?
+* Are we interested in other cancers than those targeted?
+    + Cervical
+    + Endomedrial
+    + Gastric
+    + Pancreatic
+    + Thyroid
+* What P-value threshold to use
+    + ?Use $`r 5e-8`$
+* If multiple associations recorded for a variant, how do we approach different statistics?
+    + eg: rs17694493
+

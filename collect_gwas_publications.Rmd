@@ -1,0 +1,217 @@
+---
+title: "Extract records of interest from the EBI GWAS Catalog"
+output:
+  html_notebook: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, echo=FALSE}
+reticulate::use_condaenv('gwas-biocenv')
+suppressPackageStartupMessages(library(gwascat))
+library(readr)
+suppressPackageStartupMessages(library(dplyr))
+suppressPackageStartupMessages(library(stringr))
+
+# Unique developer key used when interacting with the NCBI eutils API
+Sys.setenv(ncbi_api_key = "d96bb10ffdca4cfb6ad3c963ba2e9f155d09")
+```
+
+```{r Get live data, echo=FALSE}
+source('get_gwas_dataset.R')
+```
+
+### Reducing the dataset
+First we need to reduce the full GWAS Catalog [data dictionary here](https://www.ebi.ac.uk/gwas/docs/fileheaders) down to include only cancer related records.
+
+Once this is done, each record will be assessed and categorised based on a thematic analysis of the study title.
+
+The intent here is to isolate only those records that have some kind of relevance to cancer. This will be done by filtering for cancer-like keywords in the DISEASE.TRAIT field.
+
+#### Positive RegEx matches (include)
+* "cancer"
+    + Match the pattern "cancer"
+* "oma[^\\w]"
+    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
+    + Included: Melan**oma**, Carcin**oma**, etc...
+    + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic 
+    + **NOTE:** *Need to validate that no cancer records are excluded*
+```{r RegEx include}
+data <- gwas_data %>% 
+    as_tibble() %>%
+    filter(
+        str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma[^\\w]")
+    )
+```
+
+#### Negative RegEx matches (exclude)
+* "glaucoma"
+    + Exclude the pattern "glaucoma"
+    + Glaucoma is a degenerative eye syndrome characterised by vision loss as a result of damage to the optic nerve (not cancer).
+* "tripanosoma"
+    + Exclude the pattern "tripanosoma"
+    + Tripanosoma is a genus of parasitic protozoa (not cancer).
+* "hematoma"
+    + Exclude the pattern "hematoma"
+    + A hematoma is an abnormal collection of blood  external to the circulatory system (a more serious form of bruise) caused by the leakage of blood from a *large* blood vessel (not cancer).
+
+```{r RegEx exclude}
+data <- filter(
+    data,
+    !str_detect(DISEASE.TRAIT, fixed("glaucoma", ignore_case = TRUE)),
+    !str_detect(DISEASE.TRAIT, fixed("tripanosoma", ignore_case = TRUE)),
+    !str_detect(DISEASE.TRAIT, fixed("hematoma", ignore_case = TRUE))
+    ) %>%
+    arrange(desc(PUBMEDID))
+```
+
+Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
+
+Next, we will interface with the eutils API to collect the publication data (including PDFs where available) for import into EndNote
+
+# Get Publication data from PubMed via API
+
+## Import functions to generate API URL
+```{r functions to generate API URLs}
+source('functions/ncbi_eutil_functions.R')
+```
+
+## Query PubMed via NCBI API to get MEDLINE data for all target publications
+```{r GET MEDLINE data for all target PubMed references}
+# Get a list of unique PubMed IDs
+gwas_ids <- gwas_data %>% 
+    distinct(PUBMEDID, .keep_all = TRUE)
+
+# Concatenate all SNP IDs associated with a given PUBMEDID into a single record for that PUBMEDID
+gwas_data <- gwas_data %>% 
+    group_by(PUBMEDID) %>% 
+    mutate(SnpCnt = paste0("SNP_",row_number())) %>% 
+    data.table::setDT() %>% 
+    data.table::dcast.data.table(
+        PUBMEDID ~ SnpCnt,
+        value.var = "SNPS",
+        fill = NA,
+        drop = TRUE
+    ) %>% 
+    tidyr::unite(SNPS, -PUBMEDID, sep=",") %>% 
+    mutate(
+        SNPS = str_replace_all(SNPS, "[NA,]+", ", "),
+        SNPS = substr(SNPS, 1, nchar(SNPS)-2)
+        ) %>%
+    inner_join(
+        distinct(gwas_data, PUBMEDID, .keep_all = TRUE), 
+        by = "PUBMEDID"
+        ) %>% 
+    select(PUBMEDID, SNPS = SNPS.x, DISEASE.TRAIT)
+
+# Generate URL for API using those unique PUBMEDIDs
+fetch_url <- eutil_fetch_url_generator(
+    db='pubmed',
+    ids=paste(gwas_ids$PUBMEDID, collapse=','),
+    rettype='medline',
+    api_key=Sys.getenv('ncbi_api_key')
+)
+
+# Submit HTTP GET Request, save Response
+r <- GET(fetch_url)
+
+# Save raw (hex) HTTP Response stream (Medline formatted reference data) to plain text file
+writeBin(content(r, 'raw'), 'medline.txt')
+```
+
+```{r Add custom content fields to Medline dataset}
+# Read plain Medline text back in
+medline_txt <- readLines("medline.txt")
+
+# Loop through each entry and add custom EndNote fields:
+    # "Label" (ED), - Notes the GWAS associated DISEASE.TRAIT
+    # "Research Note" - Notes that this record was extracted from the GWAS catalog
+    # "Target Detail" (CP) - Contains SNP ids
+
+for(id in 1:length(gwas_data$PUBMEDID)){
+    medline_txt <- rsed::sed_insert(
+        stream = medline_txt,
+        after = paste0("PMID- ", gwas_data$PUBMEDID[id]),
+        insertion = paste0("ED  - ", gwas_data$DISEASE.TRAIT[id], "\n", 
+                           "EP  - Extracted from GWAS Catalog", "\n",
+                           "CP  - ", gwas_data$SNPS[id])
+    )
+}
+
+# Clean up after for loop
+rm(id)
+
+# Write updated Medline data to file
+writeLines(medline_txt, 'medline.txt')
+```
+
+```{r GET PubMedC PDF documents}
+base_ftp_url <- "ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/"
+
+# Load Open Access dataset
+oa_files <- readr::read_csv("data/oa_file_list.csv")
+
+# Isolate target publications & generate URL for each one
+target_files <- oa_files %>%
+    filter(PMID %in% gwas_ids$PUBMEDID) %>%
+    mutate(File = paste0(base_ftp_url, File),
+           as.character(PMID))
+
+if(!file.exists("downloads")){
+    dir.create("downloads")
+}
+
+# Download PMC archive files
+purrr::map2(target_files$File,
+            paste0("downloads/", target_files$PMID, ".tar.gz"),
+            download.file)
+
+if(!file.exists("downloads/extracts")){
+    dir.create("downloads/extracts")
+    }
+
+# Extract PDFs from archive
+purrr::map(paste0("downloads/", target_files$PMID, ".tar.gz"),
+           untar,
+           files = "*.pdf$",
+           exdir = "downloads/extracts")
+
+# Rename PDFs to PMCID and move to a single folder
+for (dir in list.dirs("downloads/extracts", recursive = FALSE)){
+
+    iter = 0
+
+    for (file in list.files(dir)){
+        
+        filepath <- paste0(dir, "/", file)
+
+        if(iter == 0){
+            file.rename(
+                filepath,
+                paste0("refs/pdfs/", str_extract(dir, "PMC[\\d]+$"), ".pdf")
+            )
+        } else {
+            file.rename(
+                filepath,
+                paste0("refs/pdfs/", str_extract(dir, "PMC[\\d]+$"), "_", iter, ".pdf")
+            )
+        }
+
+        iter = iter + 1
+    }
+}
+
+# Clean up after for loop
+rm(dir, file, filepath, iter)
+
+# Delete archive files & extract folders
+
+list.files(
+    "downloads",
+    recursive = TRUE,
+    include.dirs = FALSE, 
+    full.names = TRUE
+) %>%  
+    file.remove()
+
+```
