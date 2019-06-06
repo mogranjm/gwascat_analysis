@@ -141,7 +141,7 @@ traits_count %>%
     facet_wrap(~`Cancer Class`, scales = 'free_x') +
     theme(legend.position = "none") 
 
-ggsave('test.png', device = 'png', height=60, width=100, limitsize = FALSE)
+ggsave('gwas_cancers.png', device = 'png', height=60, width=100, limitsize = FALSE)
 
 
 ```
