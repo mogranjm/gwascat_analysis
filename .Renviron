@@ -3,6 +3,7 @@ PATH=/mnt/anaconda/3/envs/gwasenv/bin:/mnt/anaconda/3/bin:/usr/local/sbin:/usr/l
 LD_LIBRARY_PATH=/mnt/anaconda/3/envs/gwasenv/lib:
 #:/usr/lib64/R/lib:/lib:/usr/lib/jvm/jre/lib/amd64/server:/usr/lib/jvm/jre/lib/amd64:/usr/lib/jvm/java/lib/amd64:/usr/java/packages/lib/amd64:/lib:/usr/lib
 
+CURL_CA_BUNDLE=/mnt/anaconda/3/envs/gwasenv/ssl/cacert.pem
 CONDA_EXE=/mnt/anaconda/3/bin/conda
 CONDA_PYTHON_EXE=/mnt/anaconda/3/envs/gwasenv/bin/python3
 RETICULATE_PYTHON=/mnt/anaconda/3/envs/gwasenv/bin/python3
