@@ -16,9 +16,12 @@ library(readr)
 library(dplyr)
 library(stringr)
 library(ggplot2)
+
+library(qdap)
+library(tm)
 ```
 
-```{r Get live data, echo=FALSE}
+```{r Get live data, echo=FALSE, message=FALSE}
 source('refresh_gwas_dataset.R')
 ```
 
@@ -80,7 +83,7 @@ The intent here is to isolate only those records that have some kind of relevanc
     + Exclude the pattern "hematoma"
     + A hematoma is an abnormal collection of blood  external to the circulatory system (a more serious form of bruise) caused by the leakage of blood from a *large* blood vessel (not cancer).
 
-```{r}
+```{r, message=FALSE}
 source('functions/select_gwas_cancer.R')
 extract_cancer_data(gwas_data)
 ```
@@ -97,7 +100,72 @@ For example, there are SNPs that predict cancer risk (these are the ones we're p
 
 In addition, there are SNPs that predict prognosis, treatment response, adverse effects, confounding interactions, etc. Suffice to say that there are many more considerations to make before we begin to analyse the disease associations.
 
-This dataset is again reduced, this time to unique records. This dataframe is exported to CSV for classification via title analysis (using Excel)
+This dataset is again reduced, this time to unique records. This dataframe is used for classification via title analysis (K-Means Clustering)
+
+```{r}
+# Prepare titles for text analysis
+
+titles <- gwas_cancer_data %>%
+	select(DISEASE.TRAIT) %>% 
+	distinct(DISEASE.TRAIT) %>%
+	mutate(
+ 		traits = tolower(DISEASE.TRAIT),                                # all lowercase
+		traits = str_replace_all(traits, "brca1/2", "brca1 brca2"),     # retain meaning when removing /
+		traits = str_replace_all(traits, "her2\\+", "her2 positive"),   # change her2+ to her2 positive
+ 		traits = str_replace_all(traits, " r\\+", "r positive"),   # change er+ or pr+ to er positive
+# 		traits = str_replace_all(traits, "[A-Za-z]\\+", " ")
+	) %>%
+	pull()
+
+## Create a corpus
+# titles <- gwas_cancer_data %>% 
+# 	select(DISEASE.TRAIT) %>% 
+# 	distinct(DISEASE.TRAIT) %>% 
+# 	pull() 
+
+titles
+```
+
+```{r}
+title_corpus <- titles %>% 
+	tm::VectorSource() %>% 
+	tm::VCorpus()
+
+## Clean the corpus
+clean_corpus <- title_corpus %>% 
+	tm::tm_map(tm::removePunctuation, preserve_intra_word_dashes=TRUE) %>% 
+	tm::tm_map(tm::removeNumbers) %>% 
+	tm::tm_map(tm::content_transformer(tolower)) %>% 
+	tm::tm_map(tm::removeWords, c(tm::stopwords("en"), "cancer")) %>% 
+	tm::tm_map(tm::stripWhitespace)
+
+for(i in 1:length(clean_corpus)){
+	print(clean_corpus[[i]][1])
+}
+
+titles_dtm <- TermDocumentMatrix(clean_corpus)
+
+titles_mat <- as.matrix(titles_dtm)
+
+dim(titles_mat)
+
+term_freq <- rowSums(titles_mat)
+term_freq <- sort(term_freq, decreasing = T)
+
+barplot(term_freq[1:10], col = 'tan', las=2)
+
+word_freqs <- data.frame(
+	term=names(term_freq),
+	num=term_freq
+)
+
+wordcloud::wordcloud(
+	word_freqs$term, 
+	word_freqs$num, 
+	max.words=35
+	)
+```
+
 
 ```{r}
 data #%>% 

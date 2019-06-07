@@ -1,6 +1,8 @@
 source('functions/get_current_gwas_data.R')
 
-reticulate::use_condaenv('gwas-biocenv')
+reticulate::use_condaenv('gwasenv')
+
+if(!dir.exists('data')){dir.create('data')}
 
 this_months_gwas_datafile <- grep(pattern = paste0('gwas_data_', substr(Sys.Date(), start = 1, stop = 8), '*'),
 								  list.files('data/'), value=TRUE)

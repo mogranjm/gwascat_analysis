@@ -8,61 +8,19 @@ output:
 
 ```{r setup, echo=FALSE}
 reticulate::use_condaenv('gwas-biocenv')
-suppressPackageStartupMessages(library(gwascat))
+library(gwascat)
 library(readr)
-suppressPackageStartupMessages(library(dplyr))
-suppressPackageStartupMessages(library(stringr))
+library(dplyr)
+library(stringr)
 
 # Unique developer key used when interacting with the NCBI eutils API
 Sys.setenv(ncbi_api_key = "d96bb10ffdca4cfb6ad3c963ba2e9f155d09")
 ```
 
-```{r Get live data, echo=FALSE}
-source('get_gwas_dataset.R')
-```
-
-### Reducing the dataset
-First we need to reduce the full GWAS Catalog [data dictionary here](https://www.ebi.ac.uk/gwas/docs/fileheaders) down to include only cancer related records.
-
-Once this is done, each record will be assessed and categorised based on a thematic analysis of the study title.
-
-The intent here is to isolate only those records that have some kind of relevance to cancer. This will be done by filtering for cancer-like keywords in the DISEASE.TRAIT field.
-
-#### Positive RegEx matches (include)
-* "cancer"
-    + Match the pattern "cancer"
-* "oma[^\\w]"
-    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
-    + Included: Melan**oma**, Carcin**oma**, etc...
-    + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic 
-    + **NOTE:** *Need to validate that no cancer records are excluded*
-```{r RegEx include}
-data <- gwas_data %>% 
-    as_tibble() %>%
-    filter(
-        str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma[^\\w]")
-    )
-```
-
-#### Negative RegEx matches (exclude)
-* "glaucoma"
-    + Exclude the pattern "glaucoma"
-    + Glaucoma is a degenerative eye syndrome characterised by vision loss as a result of damage to the optic nerve (not cancer).
-* "tripanosoma"
-    + Exclude the pattern "tripanosoma"
-    + Tripanosoma is a genus of parasitic protozoa (not cancer).
-* "hematoma"
-    + Exclude the pattern "hematoma"
-    + A hematoma is an abnormal collection of blood  external to the circulatory system (a more serious form of bruise) caused by the leakage of blood from a *large* blood vessel (not cancer).
-
-```{r RegEx exclude}
-data <- filter(
-    data,
-    !str_detect(DISEASE.TRAIT, fixed("glaucoma", ignore_case = TRUE)),
-    !str_detect(DISEASE.TRAIT, fixed("tripanosoma", ignore_case = TRUE)),
-    !str_detect(DISEASE.TRAIT, fixed("hematoma", ignore_case = TRUE))
-    ) %>%
-    arrange(desc(PUBMEDID))
+```{r Get live data, echo=FALSE, message=FALSE}
+source('refresh_gwas_dataset.R')
+source('functions/select_gwas_cancer.R')
+extract_cancer_data(gwas_data)
 ```
 
 Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
@@ -84,8 +42,8 @@ gwas_ids <- gwas_data %>%
 
 # Concatenate all SNP IDs associated with a given PUBMEDID into a single record for that PUBMEDID
 gwas_data <- gwas_data %>% 
-    group_by(PUBMEDID) %>% 
-    mutate(SnpCnt = paste0("SNP_",row_number())) %>% 
+    dplyr::group_by(PUBMEDID) %>% 
+    dplyr::mutate(SnpCnt = paste0("SNP_",row_number())) %>%
     data.table::setDT() %>% 
     data.table::dcast.data.table(
         PUBMEDID ~ SnpCnt,
@@ -94,15 +52,16 @@ gwas_data <- gwas_data %>%
         drop = TRUE
     ) %>% 
     tidyr::unite(SNPS, -PUBMEDID, sep=",") %>% 
-    mutate(
-        SNPS = str_replace_all(SNPS, "[NA,]+", ", "),
-        SNPS = substr(SNPS, 1, nchar(SNPS)-2)
+    dplyr::mutate(
+        SNPS = stringr::str_replace_all(SNPS, "[NA,]+", ", "),
+        SNPS = stringr::str_sub(SNPS, 1, nchar(SNPS)-2)
+        # SNPS = substr(SNPS, 1, nchar(SNPS)-2)
         ) %>%
     inner_join(
         distinct(gwas_data, PUBMEDID, .keep_all = TRUE), 
         by = "PUBMEDID"
         ) %>% 
-    select(PUBMEDID, SNPS = SNPS.x, DISEASE.TRAIT)
+    dplyr::select(PUBMEDID, SNPS = SNPS.x, DISEASE.TRAIT)
 
 # Generate URL for API using those unique PUBMEDIDs
 fetch_url <- eutil_fetch_url_generator(
@@ -113,10 +72,10 @@ fetch_url <- eutil_fetch_url_generator(
 )
 
 # Submit HTTP GET Request, save Response
-r <- GET(fetch_url)
+r <- httr::GET(fetch_url)
 
 # Save raw (hex) HTTP Response stream (Medline formatted reference data) to plain text file
-writeBin(content(r, 'raw'), 'medline.txt')
+writeBin(httr::content(r, 'raw'), 'medline.txt')
 ```
 
 ```{r Add custom content fields to Medline dataset}
