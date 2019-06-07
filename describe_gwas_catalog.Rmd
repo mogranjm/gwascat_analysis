@@ -110,9 +110,24 @@ titles <- gwas_cancer_data %>%
 	distinct(DISEASE.TRAIT) %>%
 	mutate(
  		traits = tolower(DISEASE.TRAIT),                                # all lowercase
-		traits = str_replace_all(traits, "brca1/2", "brca1 brca2"),     # retain meaning when removing /
-		traits = str_replace_all(traits, "her2\\+", "her2 positive"),   # change her2+ to her2 positive
- 		traits = str_replace_all(traits, " r\\+", "r positive"),   # change er+ or pr+ to er positive
+ 		traits = str_remove_all(traits, " cancer"),                      # remove all instances of the word "cancer"
+		traits = str_replace_all(traits, "brca1/2", "brca1 brca2 "),     # retain meaning when removing /
+		traits = str_replace_all(traits, "her2\\+", "her2 receptor-positive"),   # change her2+ to her2 positive
+		traits = str_replace_all(traits, "her2 negative", "her2 receptor-negative"),
+		traits = str_replace_all(traits, "oestrogen", "estrogen"),   # change er+ or pr+ to er positive
+		traits = str_replace_all(traits, "pr\\+", "progesterone receptor positive"),   # change er+ or pr+ to er positive
+ 		traits = str_replace_all(traits, "er\\+", "estrogen receptor positive"), 
+		traits = str_replace_all(traits, "estrogen-receptor", "estrogen receptor"),
+		traits = str_replace_all(traits, "progesterone-receptor", "progesterone receptor"),
+		traits = str_replace_all(traits, "receptor negative", "receptor-negative"),
+		traits = str_replace_all(traits, "receptor positive", "receptor-positive"),
+		traits = str_replace_all(traits, "high grade", "high-grade"),
+		traits = str_replace_all(traits, "stage-receptor", "stage receptor"),
+		traits = str_replace_all(traits, "early stage", "early-stage"),
+		traits = str_replace_all(traits, "early onset", "early-onset"),
+		traits = str_replace_all(traits, "dna repair", "dna-repair"),
+		traits = str_replace_all(traits, " -", " "),
+		traits = str_replace_all(traits, " cell", "-cell"),
 # 		traits = str_replace_all(traits, "[A-Za-z]\\+", " ")
 	) %>%
 	pull()
@@ -136,7 +151,8 @@ clean_corpus <- title_corpus %>%
 	tm::tm_map(tm::removePunctuation, preserve_intra_word_dashes=TRUE) %>% 
 	tm::tm_map(tm::removeNumbers) %>% 
 	tm::tm_map(tm::content_transformer(tolower)) %>% 
-	tm::tm_map(tm::removeWords, c(tm::stopwords("en"), "cancer")) %>% 
+	# tm::tm_map(tm::removeWords, c(tm::stopwords("en"))) %>%          # Removing "cancer" has a significant effect on the wordcloud
+	tm::tm_map(tm::removeWords, c(tm::stopwords("en"), "cancer")) %>%
 	tm::tm_map(tm::stripWhitespace)
 
 for(i in 1:length(clean_corpus)){
@@ -152,20 +168,20 @@ dim(titles_mat)
 term_freq <- rowSums(titles_mat)
 term_freq <- sort(term_freq, decreasing = T)
 
-barplot(term_freq[1:10], col = 'tan', las=2)
-
-word_freqs <- data.frame(
-	term=names(term_freq),
-	num=term_freq
-)
+barplot(term_freq[1:10], col = 'purple', las=2)
 
 wordcloud::wordcloud(
-	word_freqs$term, 
-	word_freqs$num, 
-	max.words=35
+	names(term_freq), 
+	term_freq, 
+	max.words=20,
+	colors = 'purple'
 	)
+
+titles %>% as_tibble() %>% filter(str_detect(value, " cell"))
 ```
 
+## UP TO HERE
+---
 
 ```{r}
 data #%>% 
