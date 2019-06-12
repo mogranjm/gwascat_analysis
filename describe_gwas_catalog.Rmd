@@ -62,7 +62,6 @@ Each record contains information about the SNP of interest:
     + Variant Context, (SNP Functional class - exon/missense/non-coding/etc)
     + Platform (Genotyping platformI manufacturer used in Stage 1)
     
-
 ### Reducing the dataset
 First we need to reduce the full GWAS Catalog [data dictionary here](https://www.ebi.ac.uk/gwas/d.  ocs/fileheaders) down to include only cancer related records.
 
@@ -187,84 +186,84 @@ wordcloud::wordcloud(
 ---
 
 ```{r}
-data #%>% 
-    distinct(DISEASE.TRAIT) #%>% 
-    left_join(traits) %>% 
-    readr::write_csv("data/gwas_cancer_traits.csv")
+# data #%>% 
+#     distinct(DISEASE.TRAIT) #%>% 
+#     left_join(traits) %>% 
+#     readr::write_csv("data/gwas_cancer_traits.csv")
 ```
 
 ```{r}
-data %>% filter(
-    str_detect(DISEASE.TRAIT, "recurrence rate")
-) %>% 
-    distinct(STUDY,.keep_all = T) %>%
-    arrange(DISEASE.TRAIT)
-
-data %>% 
-    # filter(str_detect(DISEASE.TRAIT, fixed('adenoma', ignore_case = T))) %>% 
-    # filter(str_detect(MAPPED_TRAIT, fixed('neoplasm', ignore_case = T))) #%>%
-    count(MAPPED_TRAIT)
+# data %>% filter(
+#     str_detect(DISEASE.TRAIT, "recurrence rate")
+# ) %>% 
+#     distinct(STUDY,.keep_all = T) %>%
+#     arrange(DISEASE.TRAIT)
+# 
+# data %>% 
+#     # filter(str_detect(DISEASE.TRAIT, fixed('adenoma', ignore_case = T))) %>% 
+#     # filter(str_detect(MAPPED_TRAIT, fixed('neoplasm', ignore_case = T))) #%>%
+#     count(MAPPED_TRAIT)
 ```
 
 
 ```{r}
-traits <- readr::read_csv("data/gwas_cancer_traits_labelled.csv") %>% 
-    mutate(`Cancer Subtype` = ifelse(is.na(`Cancer Subtype`), 'Not Specified', `Cancer Subtype`))
+# traits <- readr::read_csv("data/gwas_cancer_traits_labelled.csv") %>% 
+#     mutate(`Cancer Subtype` = ifelse(is.na(`Cancer Subtype`), 'Not Specified', `Cancer Subtype`))
 ```
 
 ```{r fig.height=70, fig.width=100}
-traits_count <- traits %>%
-    group_by(`Cancer Class`, `Cancer Subtype`) %>% 
-    mutate(new_n = sum(n)) %>% 
-    ungroup %>% 
-    distinct(`Cancer Class`, `Cancer Subtype`, .keep_all = TRUE) %>% 
-    select(`Cancer Class`, `Cancer Subtype`, Count = new_n) %>% 
-    # count(Grouping1) %>% 
-    arrange(`Cancer Class`)
-
-traits_count %>% 
-    ggplot(aes(x = `Cancer Subtype`, y = Count, fill = `Cancer Subtype`)) +
-    geom_bar(stat='identity') +
-    facet_wrap(~`Cancer Class`, scales = 'free_x') +
-    theme(legend.position = "none") 
-
-ggsave('gwas_cancers.png', device = 'png', height=60, width=100, limitsize = FALSE)
+# traits_count <- traits %>%
+#     group_by(`Cancer Class`, `Cancer Subtype`) %>% 
+#     mutate(new_n = sum(n)) %>% 
+#     ungroup %>% 
+#     distinct(`Cancer Class`, `Cancer Subtype`, .keep_all = TRUE) %>% 
+#     select(`Cancer Class`, `Cancer Subtype`, Count = new_n) %>% 
+#     # count(Grouping1) %>% 
+#     arrange(`Cancer Class`)
+# 
+# traits_count %>% 
+#     ggplot(aes(x = `Cancer Subtype`, y = Count, fill = `Cancer Subtype`)) +
+#     geom_bar(stat='identity') +
+#     facet_wrap(~`Cancer Class`, scales = 'free_x') +
+#     theme(legend.position = "none") 
+# 
+# ggsave('gwas_cancers.png', device = 'png', height=60, width=100, limitsize = FALSE)
 
 
 ```
 
 
 ```{r}
-data %>% 
-    count(DISEASE.TRAIT) #%>% 
-    left_join(traits) %>% 
-    readr::write_csv("gwas_cancer_traits.csv")
+# data %>% 
+#     count(DISEASE.TRAIT) #%>% 
+#     left_join(traits) %>% 
+#     readr::write_csv("gwas_cancer_traits.csv")
 ```
 
 ```{r fig.width=80, fig.height=20 }
-plot <- plot_data %>% 
-    # count(DISEASE.TRAIT, SNPS) %>% 
-    count(DISEASE.TRAIT) %>%
-    ggplot() +
-        theme(
-           legend.position = "none"
-        ) +
-        coord_flip()
-
-plot +
-    geom_col(
-        aes(
-            x = reorder(DISEASE.TRAIT,desc(n)),
-            # x = DISEASE.TRAIT,
-            y = n,
-            fill = DISEASE.TRAIT)
-    )
-
-ggsave('plot2.png', 
-       width = 80,
-       height = 60,
-       units = 'cm') 
-       
+# plot <- plot_data %>% 
+#     # count(DISEASE.TRAIT, SNPS) %>% 
+#     count(DISEASE.TRAIT) %>%
+#     ggplot() +
+#         theme(
+#            legend.position = "none"
+#         ) +
+#         coord_flip()
+# 
+# plot +
+#     geom_col(
+#         aes(
+#             x = reorder(DISEASE.TRAIT,desc(n)),
+#             # x = DISEASE.TRAIT,
+#             y = n,
+#             fill = DISEASE.TRAIT)
+#     )
+# 
+# ggsave('plot2.png', 
+#        width = 80,
+#        height = 60,
+#        units = 'cm') 
+#        
 ```
 
 ### Need to check:
