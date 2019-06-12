@@ -7,18 +7,25 @@ output:
 ---
 ```{r setup, echo=FALSE}
 reticulate::use_condaenv('gwasenv')
+
+library(gwascat)
+# library(readr)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
 ```
 
 ```{r fake setup, eval=FALSE}
 # Libraries used in this analysis
 library(gwascat)
-library(readr)
+# library(readr)
 library(dplyr)
 library(stringr)
-library(ggplot2)
+# library(ggplot2)
 
 library(qdap)
-library(tm)
+# library(tm)
 ```
 
 ```{r Get live data, echo=FALSE, message=FALSE}
@@ -106,7 +113,7 @@ This dataset is again reduced, this time to unique records. This dataframe is us
 # Prepare titles for text analysis
 
 titles <- gwas_cancer_data %>%
-	select(DISEASE.TRAIT) %>% 
+	dplyr::select(DISEASE.TRAIT) %>% 
 	distinct(DISEASE.TRAIT) %>%
 	mutate(
  		traits = tolower(DISEASE.TRAIT),                                # all lowercase
@@ -126,58 +133,54 @@ titles <- gwas_cancer_data %>%
 		traits = str_replace_all(traits, "early stage", "early-stage"),
 		traits = str_replace_all(traits, "early onset", "early-onset"),
 		traits = str_replace_all(traits, "dna repair", "dna-repair"),
+		# traits = str_replace_all(traits, "progression free", "progression-free"),
+		# traits = str_replace_all(traits, "disease free", "disease-free"),
+		# traits = str_replace_all(traits, "event free", "event-free"),
+		traits = str_replace_all(traits, "disease-free", "disease free"),
+		traits = str_replace_all(traits, "breast-free", "breast free"),
+		traits = str_replace_all(traits, "free survival", "free-survival"),
+		# traits = str_replace_all(traits, "[^| |overall ]survival", " overall-survival"),
+		traits = str_replace_all(traits, "^survival|\\(survival\\)|survival\\)", "overall-survival"),
 		traits = str_replace_all(traits, " -", " "),
 		traits = str_replace_all(traits, " cell", "-cell"),
+		traits = str_replace_all(traits, "eptheilial", "epithelial"),
+	# )
 # 		traits = str_replace_all(traits, "[A-Za-z]\\+", " ")
 	) %>%
 	pull()
 
-## Create a corpus
-# titles <- gwas_cancer_data %>% 
-# 	select(DISEASE.TRAIT) %>% 
-# 	distinct(DISEASE.TRAIT) %>% 
-# 	pull() 
-
-titles
 ```
 
 ```{r}
-title_corpus <- titles %>% 
-	tm::VectorSource() %>% 
-	tm::VCorpus()
+source('functions/term_frequencies.R')
+term_freq <- term_frequencies(titles, 'cancer')
+```
 
-## Clean the corpus
-clean_corpus <- title_corpus %>% 
-	tm::tm_map(tm::removePunctuation, preserve_intra_word_dashes=TRUE) %>% 
-	tm::tm_map(tm::removeNumbers) %>% 
-	tm::tm_map(tm::content_transformer(tolower)) %>% 
-	# tm::tm_map(tm::removeWords, c(tm::stopwords("en"))) %>%          # Removing "cancer" has a significant effect on the wordcloud
-	tm::tm_map(tm::removeWords, c(tm::stopwords("en"), "cancer")) %>%
-	tm::tm_map(tm::stripWhitespace)
 
-for(i in 1:length(clean_corpus)){
-	print(clean_corpus[[i]][1])
-}
+```{r, fig.height=8, fig.width=10}
+# pal <- brewer.pal(9, "RdPu")
+pal <- c("#ff7028", "#ff7028", "#f92b18", "#ff114b", "#F768A1", "#DD3497", "#AE017E", "#7A0177", "#49006A")
 
-titles_dtm <- TermDocumentMatrix(clean_corpus)
-
-titles_mat <- as.matrix(titles_dtm)
-
-dim(titles_mat)
-
-term_freq <- rowSums(titles_mat)
-term_freq <- sort(term_freq, decreasing = T)
-
-barplot(term_freq[1:10], col = 'purple', las=2)
+term_freq %>% 
+	head(10) %>% 
+	ggplot(aes(x=word, y=freqs, fill = freqs)) +
+	geom_col() +
+	labs(
+		title = "GWAS Catalogue Title Word Frequency:",
+		subtitle = "Most frequent words in the titles of articles in the Cancer subset of the GWAS Catalog"
+		 ) +
+	xlab('Word') +
+	ylab('Frequency') + 
+	theme_minimal()
 
 wordcloud::wordcloud(
-	names(term_freq), 
-	term_freq, 
-	max.words=20,
-	colors = 'purple'
+	term_freq$word, 
+	term_freq$freqs,
+	# max.words=20,
+	min.freq = 6,
+	colors = pal,
+	random.color = T
 	)
-
-titles %>% as_tibble() %>% filter(str_detect(value, " cell"))
 ```
 
 ## UP TO HERE
