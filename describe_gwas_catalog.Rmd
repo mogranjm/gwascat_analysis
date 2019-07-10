@@ -6,26 +6,17 @@ output:
     df_print: paged
 ---
 ```{r setup, echo=FALSE}
-reticulate::use_condaenv('gwasenv')
-
 library(gwascat)
-# library(readr)
 library(dplyr)
 library(stringr)
 library(ggplot2)
-
 ```
 
 ```{r fake setup, eval=FALSE}
 # Libraries used in this analysis
 library(gwascat)
-# library(readr)
 library(dplyr)
 library(stringr)
-# library(ggplot2)
-
-library(qdap)
-# library(tm)
 ```
 
 ```{r Get live data, echo=FALSE, message=FALSE}
@@ -112,10 +103,10 @@ This dataset is again reduced, this time to unique records. This dataframe is us
 # Prepare titles for text analysis
 
 titles <- gwas_cancer_data %>%
-	dplyr::select(DISEASE.TRAIT) %>% 
-	distinct(DISEASE.TRAIT) %>%
+	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>% 
+	distinct(DISEASE.TRAIT, .keep_all = T) %>%
 	mutate(
- 		traits = tolower(DISEASE.TRAIT),                                # all lowercase
+ 		traits = tolower(DISEASE.TRAIT),                                 # all lowercase
  		traits = str_remove_all(traits, " cancer"),                      # remove all instances of the word "cancer"
 		traits = str_replace_all(traits, "brca1/2", "brca1 brca2 "),     # retain meaning when removing /
 		traits = str_replace_all(traits, "her2\\+", "her2 receptor-positive"),   # change her2+ to her2 positive
@@ -143,10 +134,36 @@ titles <- gwas_cancer_data %>%
 		traits = str_replace_all(traits, " -", " "),
 		traits = str_replace_all(traits, " cell", "-cell"),
 		traits = str_replace_all(traits, "eptheilial", "epithelial"),
-	# )
-# 		traits = str_replace_all(traits, "[A-Za-z]\\+", " ")
-	) %>%
-	pull()
+	) %>% 
+	filter(
+		!str_detect(traits, 'benign'),
+		!str_detect(traits, 'body mass index'),
+		!str_detect(traits, 'aggressiveness'),
+		!str_detect(traits, 'cancer-free'),
+		!str_detect(traits, 'chemotherapy'),
+		!str_detect(traits, 'anastrozole'),
+		!str_detect(traits, 'cisplatin'),
+		!str_detect(traits, 'diabetes'),
+		!str_detect(traits, 'disposition'),
+		!str_detect(traits, 'docetaxel'),
+		!str_detect(traits, 'treatment'),
+		!str_detect(traits, 'estrone'),
+		!str_detect(traits, 'gemcitabine'),
+		!str_detect(traits, 'hepatitis'),
+		#!str_detect(traits, 'infection'),
+		!str_detect(traits, 'interaction'),
+		!str_detect(traits, 'menopause'),
+		!str_detect(traits, 'metastas'),
+		!str_detect(traits, 'mortality'),
+		!str_detect(traits, 'neuropath'),
+		!str_detect(traits, 'obesity'),
+		!str_detect(traits, 'platinum'),
+		!str_detect(traits, 'plasma'),
+		!str_detect(traits, 'response'),
+		!str_detect(traits, 'survival'),
+		!str_detect(traits, 'toxicity'),
+		
+	)
 
 ```
 

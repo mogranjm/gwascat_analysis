@@ -1,5 +1,5 @@
 ---
-title: "KConFab Abstract - Reviewing the NIH GWAS Catalog to identify Candidate Malignancies ready for clinical PRS assessment"
+title: "KConFab Abstract - Reviewing the NIH GWAS Catalog to identify candidate malignancies ready for clinical PRS assessment"
 author:
   - First Author: 
       institute: [one]
@@ -8,14 +8,13 @@ institute:
   - one: "The Parkville Familial Cancer Centre, Peter MacCallum Cancer Centre and The Royal Melbourne Hospital, Melbourne, Victoria, Australia, 3000"
     
 output: 
-    papeRs::review:
-      toc: false
+    papeRs::abstract
 ---
 
 # Background
 The annual cost of cancer treatment in Australia amounts to billions of dollars worth of burden on the health system. Successful identification and targeted screening of those most at risk offers a far more cost-effective means of reducing cancer burden. Compared to existing risk estimation methods that rely primarily on family-history, Polygenic Risk Assessment offers the potential for a far more precise and personalised mechanism for determining an individual's cancer risk, even in the absence of a significant family history. 
 
-To determine which malignancies are ready for clinical polygenic risk assessment, we are analysing the NHGRI-EBI Catalog of published genome-wide association studies, applying ** criteria to identify malignancies with robust evidence suggesting the polygenic component of their risk is reliably quantifiable.
+To determine which malignancies are ready for clinical polygenic risk assessment, we are analysing the NHGRI-EBI Catalog of published genome-wide association studies, applying *blah* criteria to identify malignancies with robust evidence suggesting the polygenic component of their risk is reliably quantifiable.
 
 # Methods
 Up-to-date publication data for all studies recorded in the GWAS Catalog was obtained using the **gwascat** package available for R via BioConductor. The data were filtered, cleaned and analysed to identify studies reporting Single Nucleotide Polymorphisms (SNPs) associated with an increase in the risk of a particular type of cancer. The reported SNPs for these malignancies were then assessed for validity by .
