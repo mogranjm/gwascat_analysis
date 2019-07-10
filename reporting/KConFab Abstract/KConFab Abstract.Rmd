@@ -1,0 +1,27 @@
+---
+title: "KConFab Abstract - Reviewing the NIH GWAS Catalog to identify Candidate Malignancies ready for clinical PRS assessment"
+author:
+  - First Author: 
+      institute: [one]
+      email: jamesa.morgan@petermac.org
+institute:
+  - one: "The Parkville Familial Cancer Centre, Peter MacCallum Cancer Centre and The Royal Melbourne Hospital, Melbourne, Victoria, Australia, 3000"
+    
+output: 
+    papeRs::review:
+      toc: false
+---
+
+# Background
+The annual cost of cancer treatment in Australia amounts to billions of dollars worth of burden on the health system. Successful identification and targeted screening of those most at risk offers a far more cost-effective means of reducing cancer burden.
+
+Polygenic Risk Assessment offers the potential for a far more precise and personalised mechanism for cancer
+
+At present, the clinical practice of estimating cancer risk is inadequate. Based primarily on the assessment of family history, 
+
+# Methods
+
+
+# Results
+
+# Conclusion
