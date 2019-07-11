@@ -13,11 +13,14 @@ this_months_gwas_datafile <- grep(pattern = paste0('gwas_data_', substr(Sys.Date
 if(length(this_months_gwas_datafile)>=1){
 
 	print('Reading data file...')
-	gwas_data <- suppressMessages(
-		read_csv(
-			paste0('data/',
-				   grep(paste0('gwas_data_', substr(Sys.Date(), start = 1, stop = 7), '*'),
-				   	 list.files('data/'), value=TRUE)))
+	gwas_data <- read_csv(
+		paste0('data/',
+			   grep(
+			   	paste0('gwas_data_',
+			   		   substr(Sys.Date(), start = 1, stop = 8),
+			   		   '*'),
+			   	list.files('data/'), value=TRUE)
+		)
 	)
 } else {
 	print('Downloading gwas catalog...')
