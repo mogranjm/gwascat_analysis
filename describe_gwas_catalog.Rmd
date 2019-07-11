@@ -100,72 +100,172 @@ In addition, there are SNPs that predict prognosis, treatment response, adverse 
 This dataset is again reduced, this time to unique records. This dataframe is used for classification via title analysis (K-Means Clustering)
 
 ```{r}
-# Prepare titles for text analysis
+# Prepare titles for classification
 
-titles <- gwas_cancer_data %>%
+cancer_classes <- gwas_cancer_data %>%
 	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>% 
-	distinct(DISEASE.TRAIT, .keep_all = T) %>%
 	mutate(
  		traits = tolower(DISEASE.TRAIT),                                 # all lowercase
- 		traits = str_remove_all(traits, " cancer"),                      # remove all instances of the word "cancer"
-		traits = str_replace_all(traits, "brca1/2", "brca1 brca2 "),     # retain meaning when removing /
-		traits = str_replace_all(traits, "her2\\+", "her2 receptor-positive"),   # change her2+ to her2 positive
-		traits = str_replace_all(traits, "her2 negative", "her2 receptor-negative"),
-		traits = str_replace_all(traits, "oestrogen", "estrogen"),   # change er+ or pr+ to er positive
-		traits = str_replace_all(traits, "pr\\+", "progesterone receptor positive"),   # change er+ or pr+ to er positive
- 		traits = str_replace_all(traits, "er\\+", "estrogen receptor positive"), 
-		traits = str_replace_all(traits, "estrogen-receptor", "estrogen receptor"),
-		traits = str_replace_all(traits, "progesterone-receptor", "progesterone receptor"),
-		traits = str_replace_all(traits, "receptor negative", "receptor-negative"),
-		traits = str_replace_all(traits, "receptor positive", "receptor-positive"),
-		traits = str_replace_all(traits, "high grade", "high-grade"),
-		traits = str_replace_all(traits, "stage-receptor", "stage receptor"),
-		traits = str_replace_all(traits, "early stage", "early-stage"),
-		traits = str_replace_all(traits, "early onset", "early-onset"),
-		traits = str_replace_all(traits, "dna repair", "dna-repair"),
-		# traits = str_replace_all(traits, "progression free", "progression-free"),
-		# traits = str_replace_all(traits, "disease free", "disease-free"),
-		# traits = str_replace_all(traits, "event free", "event-free"),
-		traits = str_replace_all(traits, "disease-free", "disease free"),
-		traits = str_replace_all(traits, "breast-free", "breast free"),
-		traits = str_replace_all(traits, "free survival", "free-survival"),
-		# traits = str_replace_all(traits, "[^| |overall ]survival", " overall-survival"),
-		traits = str_replace_all(traits, "^survival|\\(survival\\)|survival\\)", "overall-survival"),
-		traits = str_replace_all(traits, " -", " "),
-		traits = str_replace_all(traits, " cell", "-cell"),
-		traits = str_replace_all(traits, "eptheilial", "epithelial"),
+#  		traits = str_remove_all(traits, " cancer"),                      # remove all instances of the word "cancer"
+# 		traits = str_replace_all(traits, "brca1/2", "brca1 brca2 "),     # retain meaning when removing /
+# 		traits = str_replace_all(traits, "her2\\+", "her2 receptor-positive"),   # change her2+ to her2 positive
+# 		traits = str_replace_all(traits, "her2 negative", "her2 receptor-negative"),
+# 		traits = str_replace_all(traits, "oestrogen", "estrogen"),   # change er+ or pr+ to er positive
+# 		traits = str_replace_all(traits, "pr\\+", "progesterone receptor positive"),   # change er+ or pr+ to er positive
+#  		traits = str_replace_all(traits, "er\\+", "estrogen receptor positive"), 
+# 		traits = str_replace_all(traits, "estrogen-receptor", "estrogen receptor"),
+# 		traits = str_replace_all(traits, "progesterone-receptor", "progesterone receptor"),
+# 		traits = str_replace_all(traits, "receptor negative", "receptor-negative"),
+# 		traits = str_replace_all(traits, "receptor positive", "receptor-positive"),
+# 		traits = str_replace_all(traits, "high grade", "high-grade"),
+# 		traits = str_replace_all(traits, "stage-receptor", "stage receptor"),
+# 		traits = str_replace_all(traits, "early stage", "early-stage"),
+# 		traits = str_replace_all(traits, "early onset", "early-onset"),
+# 		traits = str_replace_all(traits, "dna repair", "dna-repair"),
+# 		# traits = str_replace_all(traits, "progression free", "progression-free"),
+# 		# traits = str_replace_all(traits, "disease free", "disease-free"),
+# 		# traits = str_replace_all(traits, "event free", "event-free"),
+# 		traits = str_replace_all(traits, "disease-free", "disease free"),
+# 		traits = str_replace_all(traits, "breast-free", "breast free"),
+# 		traits = str_replace_all(traits, "free survival", "free-survival"),
+# 		# traits = str_replace_all(traits, "[^| |overall ]survival", " overall-survival"),
+# 		traits = str_replace_all(traits, "^survival|\\(survival\\)|survival\\)", "overall-survival"),
+# 		traits = str_replace_all(traits, " -", " "),
+# 		traits = str_replace_all(traits, " cell", "-cell"),
+# 		traits = str_replace_all(traits, "eptheilial", "epithelial"),
 	) %>% 
-	filter(
-		!str_detect(traits, 'benign'),
-		!str_detect(traits, 'body mass index'),
-		!str_detect(traits, 'aggressiveness'),
-		!str_detect(traits, 'cancer-free'),
-		!str_detect(traits, 'chemotherapy'),
-		!str_detect(traits, 'anastrozole'),
-		!str_detect(traits, 'cisplatin'),
-		!str_detect(traits, 'diabetes'),
-		!str_detect(traits, 'disposition'),
-		!str_detect(traits, 'docetaxel'),
-		!str_detect(traits, 'treatment'),
-		!str_detect(traits, 'estrone'),
-		!str_detect(traits, 'gemcitabine'),
-		!str_detect(traits, 'hepatitis'),
-		#!str_detect(traits, 'infection'),
-		!str_detect(traits, 'interaction'),
-		!str_detect(traits, 'menopause'),
-		!str_detect(traits, 'metastas'),
-		!str_detect(traits, 'mortality'),
-		!str_detect(traits, 'neuropath'),
-		!str_detect(traits, 'obesity'),
-		!str_detect(traits, 'platinum'),
-		!str_detect(traits, 'plasma'),
-		!str_detect(traits, 'response'),
-		!str_detect(traits, 'survival'),
-		!str_detect(traits, 'toxicity'),
-		
+	# filter(
+	# 	!str_detect(traits, 'benign'),
+	# 	!str_detect(traits, 'body mass index'),
+	# 	!str_detect(traits, 'aggressiveness'),
+	# 	!str_detect(traits, 'cancer-free'),
+	# 	!str_detect(traits, 'chemotherapy'),
+	# 	# !str_detect(traits, 'childhood'),
+	# 	!str_detect(traits, 'anastrozole'),
+	# 	!str_detect(traits, 'cisplatin'),
+	# 	!str_detect(traits, 'diabetes'),
+	# 	!str_detect(traits, 'disposition'),
+	# 	!str_detect(traits, 'docetaxel'),
+	# 	!str_detect(traits, 'treatment'),
+	# 	!str_detect(traits, 'estrone'),
+	# 	!str_detect(traits, 'gemcitabine'),
+	# 	!str_detect(traits, 'hepatitis'),
+	# 	#!str_detect(traits, 'infection'),
+	# 	!str_detect(traits, 'interaction'),
+	# 	!str_detect(traits, 'menopause'),
+	# 	!str_detect(traits, 'metastas'),
+	# 	!str_detect(traits, 'mortality'),
+	# 	!str_detect(traits, 'prognosis'),
+	# 	!str_detect(traits, 'neuropath'),
+	# 	!str_detect(traits, 'obesity'),
+	# 	!str_detect(traits, 'platinum'),
+	# 	!str_detect(traits, 'plasma'),
+	# 	!str_detect(traits, 'response'),
+	# 	# !str_detect(traits, 'status'),
+	# 	!str_detect(traits, 'survival'),
+	# 	!str_detect(traits, 'toxicity'),
+	# ) %>% 
+	mutate(
+		bile_duct =        if_else(str_detect(traits, "cholangio"), TRUE, FALSE),
+		bladder =          if_else(str_detect(traits, "bladder"), TRUE, FALSE),
+		blood =            if_else(str_detect(traits, "b-cell|myeloma"), TRUE, FALSE),
+		brain =            if_else(str_detect(traits, "glio"), TRUE, FALSE),
+		breast =           if_else(str_detect(traits, "breast"), TRUE, FALSE),
+		cervical =         if_else(str_detect(traits, "cervical"), TRUE, FALSE),
+		colorectal =       if_else(str_detect(traits, "colo"), TRUE, FALSE),
+		endometrial =      if_else(str_detect(traits, "endometri"), TRUE, FALSE),
+		esophageal =       if_else(str_detect(traits, "esophageal"), TRUE, FALSE),
+		gallbladder =      if_else(str_detect(traits, "gall"), TRUE, FALSE),
+		gastric =          if_else(str_detect(traits, "gastric"), TRUE, FALSE),
+		head_neck =        if_else(str_detect(traits, "oral cavity|oropharynx"), TRUE, FALSE),
+		lung =             if_else(str_detect(traits, "lung"), TRUE, FALSE),
+		neuroblastoma =    if_else(str_detect(traits, "neuroblastoma"), TRUE, FALSE),
+		ovarian =          if_else(str_detect(traits, "ovarian"), TRUE, FALSE),
+		pancreatic =       if_else(str_detect(traits, "pancrea"), TRUE, FALSE),
+		prostate =         if_else(str_detect(traits, "prostate"), TRUE, FALSE),
+		skin_or_melanoma = if_else(str_detect(traits, "melanoma|skin"), TRUE, FALSE),
+		thyroid =          if_else(str_detect(traits, "thyroid"), TRUE, FALSE),
+		testicular =       if_else(str_detect(traits, "testic"), TRUE, FALSE),
 	)
-
 ```
+
+```{r}
+# Check whether any publications are not classified
+cancer_classes %>% 
+	filter(!any(c(bile_duct:testicular)))
+```
+
+```{r}
+gwas_cancer_data %>% filter(PUBMEDID == "28649644")
+```
+
+```{r}
+bile_pubs <- filter(cancer_classes, bile_duct == TRUE)
+
+breast_pubs[str_detect(breast_pubs$traits, chemotherapy),]
+
+
+breast_pubs %>% 
+	filter(str_detect(traits, "free")) #%>% 
+	distinct(PUBMEDID)
+```
+
+```{r define exclusion terms for breast set}
+chemotherapy <- "anastrozole|taxane|paclitaxel|trastuzumab"
+	# anastrozole - one publication:  30648747 (phamacokinetics/pharmacogenomics - SNP encodes anastrozole influx transporter)
+	# taxane      - one publication:  29278617
+	# paclitaxel  - two publications: 28763429, 24025145 (adverse effects: alopecia/change in LVEF)
+	# trastuzumab - one publication:  28763429 (adverse effects: change in LVEF)
+
+hormone_therapy <- "tamoxifen"    
+	# tamoxifen   - two publications: 30161160, 22180457
+
+radiation <- "childhood"
+	# childhood   - one publication:  29059430 (studied effect of chest-directed radiotherapy on female survivors of childhood cancer
+
+survival_time <- "free"
+	# free        - two publications: 27758888, 25867717 (Cancer-free interval post treatment)
+
+tumour_biochem <- "estrone|androstene"
+	# estrone     - one publication:  28429243 (hormone levels in resected early-stage tumours)
+	# androstene  - one publication:  28429243 
+```
+
+```{r apply filters to breast publication set}
+(
+breast_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, breast) %>% 
+	distinct(PUBMEDID, .keep_all = TRUE) %>% 
+	filter(breast == TRUE) %>% 
+	filter(
+		!str_detect(traits, "mortality"),          # exclude publications targeting post-diagnosis event (mortality)     - one publication:   30787463
+		!str_detect(traits, chemotherapy),         # exclude publications targeting treatment response (chemotherapies)  - four publications: see exclusion terms
+		!str_detect(traits, hormone_therapy),      # exclude publications targeting treatment response (hormone therapy) - two publications:  see exclusion terms
+		!str_detect(traits, radiation),            # exclude publications targeting treatment exposure (radiation)       - one publication :  see exclusion terms
+		!str_detect(traits, survival_time),        # exclude publications characterising recurrent disease               - two publications:  see exclusion terms
+		!str_detect(traits, tumour_biochem),       # exclude publications characterising tumour environment              - one publication :  see exclusion terms
+		!str_detect(traits, "survival"),           # exclude publications predicting post-diagnosis survival             - six publications:  29423119, 25964295, 25890600, 25867717, 25526632, 22232737
+	)
+)
+```
+
+```{r how many SNPs per publication}
+SNPs <- breast_selected %>% 
+	count(PUBMEDID) 
+
+SNPs
+
+SNPs %>% tally()
+```
+
+```{r}
+ breast_selected %>% 
+	select(PUBMEDID, breast) %>% 
+	right_join(gwas_cancer_data, by = "PUBMEDID") %>% 
+	mutate(breast = if_else(is.na(breast), FALSE, breast)) %>% 
+	arrange(PUBMEDID)
+```
+
 
 ```{r}
 source('functions/term_frequencies.R')
