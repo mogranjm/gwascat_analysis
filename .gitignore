@@ -43,6 +43,9 @@ vignettes/*.pdf
 # Rmarkdown output files
 *.nb.html
 
+# Knitted output
+*.docx
+
 # Shiny token, see https://shiny.rstudio.com/articles/shinyapps.html
 rsconnect/
 packrat/lib*/
