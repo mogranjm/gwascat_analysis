@@ -12,13 +12,6 @@ library(stringr)
 library(ggplot2)
 ```
 
-```{r fake setup, eval=FALSE}
-# Libraries used in this analysis
-library(gwascat)
-library(dplyr)
-library(stringr)
-```
-
 ```{r Get live data, echo=FALSE, message=FALSE}
 source('refresh_gwas_dataset.R')
 ```
@@ -349,7 +342,9 @@ blood_pubs %>% filter(str_detect(traits, '')) %>% distinct(PUBMEDID)
 bile_selected <- cancer_classes %>% 
 	select(PUBMEDID, DISEASE.TRAIT, traits, bile_duct) %>% 
 	filter(bile_duct == TRUE) %>% 
-	filter(!str_detect(traits, 'time to event')) 
+	filter(
+		!str_detect(traits, 'time to event')
+	) 
 
 gwas_classified <- bile_selected %>% 
 	select(PUBMEDID, bile_duct) %>% 
@@ -358,14 +353,33 @@ gwas_classified <- bile_selected %>%
 	arrange(PUBMEDID)
 ```
 
+```{r}
+thyroid_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, thyroid) %>% 
+	filter(thyroid == TRUE) #%>% 
+ 	filter(
+ 		!str_detect(traits, "radiation"), # exclude publications with additional exposure factors - one publication: 20350937
+ 	)
+
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, thyroid) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(thyroid = if_else(is.na(thyroid), FALSE, thyroid)) %>%
+	arrange(PUBMEDID)
+
+```
 
 
 ```{r}
 gwas_cancer_data
 
 gwas_classified %>% 
-	filter(colorectal==TRUE) %>% 
+	filter(thyroid==TRUE) %>% 
 	distinct(SNPS, .keep_all = TRUE)
+
+gwas_classified %>% 
+	filter(thyroid==TRUE) %>% 
+	distinct(PUBMEDID, .keep_all = TRUE)
 ```
 
 ```{r}
