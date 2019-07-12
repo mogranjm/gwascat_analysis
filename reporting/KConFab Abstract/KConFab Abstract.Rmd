@@ -1,28 +1,144 @@
 ---
-title: "KConFab Abstract - Reviewing the NIH GWAS Catalog to identify candidate malignancies ready for clinical PRS assessment"
+title: "Polygenic Risk: Assessing readiness for clinical risk assessment between cancer streams"
 author:
-  - First Author: 
+  - James Morgan: 
       institute: [one]
       email: jamesa.morgan@petermac.org
+  - Paul James:
+      institute: [one]
 institute:
   - one: "The Parkville Familial Cancer Centre, Peter MacCallum Cancer Centre and The Royal Melbourne Hospital, Melbourne, Victoria, Australia, 3000"
     
 output: 
     papeRs::abstract
 ---
+```{r setup, echo=FALSE, include=FALSE}
+library(gwascat)
+library(dplyr)
+
+
+source('/mnt/Projects/gwascat_analysis/refresh_gwas_dataset.R')
+source('/mnt/Projects/gwascat_analysis/functions/select_gwas_cancer.R')
+extract_cancer_data(gwas_data)
+
+cancer_classes <- gwas_cancer_data %>%
+	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>%
+	mutate(
+ 		traits =           tolower(DISEASE.TRAIT),                                 # all lowercase
+		bile_duct =        if_else(str_detect(traits, "cholangio"), TRUE, FALSE),
+		bladder =          if_else(str_detect(traits, "bladder"), TRUE, FALSE),
+		blood =            if_else(str_detect(traits, "b-cell|myeloma"), TRUE, FALSE),
+		brain =            if_else(str_detect(traits, "glio"), TRUE, FALSE),
+		breast =           if_else(str_detect(traits, "breast"), TRUE, FALSE),
+		cervical =         if_else(str_detect(traits, "cervical"), TRUE, FALSE),
+		colorectal =       if_else(str_detect(traits, "colo"), TRUE, FALSE),
+		endometrial =      if_else(str_detect(traits, "endometri"), TRUE, FALSE),
+		esophageal =       if_else(str_detect(traits, "esophageal"), TRUE, FALSE),
+		gallbladder =      if_else(str_detect(traits, "gall"), TRUE, FALSE),
+		gastric =          if_else(str_detect(traits, "gastric"), TRUE, FALSE),
+		head_neck =        if_else(str_detect(traits, "oral cavity|oropharynx"), TRUE, FALSE),
+		lung =             if_else(str_detect(traits, "lung"), TRUE, FALSE),
+		neuroblastoma =    if_else(str_detect(traits, "neuroblastoma"), TRUE, FALSE),
+		ovarian =          if_else(str_detect(traits, "ovarian"), TRUE, FALSE),
+		pancreatic =       if_else(str_detect(traits, "pancrea"), TRUE, FALSE),
+		prostate =         if_else(str_detect(traits, "prostate"), TRUE, FALSE),
+		skin_or_melanoma = if_else(str_detect(traits, "melanoma|skin"), TRUE, FALSE),
+		thyroid =          if_else(str_detect(traits, "thyroid"), TRUE, FALSE),
+		testicular =       if_else(str_detect(traits, "testic"), TRUE, FALSE),
+	)
+
+## Breast
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, breast) %>%
+	filter(breast == TRUE) %>%
+	filter(
+		!str_detect(traits, "mortality|survival|anastrozole|taxane|paclitaxel|trastuzumab|tamoxifen|childhood|free|estrone|androstene")
+	) %>%
+	select(PUBMEDID, breast) %>%
+	right_join(gwas_cancer_data, by = "PUBMEDID") %>%
+	mutate(breast = if_else(is.na(breast), FALSE, breast)) %>%
+	arrange(PUBMEDID)
+
+breast_pubs <- gwas_classified %>% filter(breast==TRUE)
+
+## Ovarian
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, ovarian) %>%
+	filter(ovarian == TRUE) %>%
+	filter(
+		!str_detect(traits, "carboplatin|paclitaxel")
+	) %>%
+	select(PUBMEDID, ovarian) %>%
+	right_join(gwas_cancer_data, by = "PUBMEDID") %>%
+	mutate(ovarian = if_else(is.na(ovarian), FALSE, ovarian)) %>%
+	arrange(PUBMEDID)
+
+ovarian_pubs <- gwas_classified %>% filter(ovarian==TRUE)
+
+## Prostate
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, prostate) %>% 
+	filter(prostate == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, 'benign|aggressiveness|survival|radiotherapy|treatment|docetaxel')
+ 	) %>% 
+	select(PUBMEDID, prostate) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(prostate = if_else(is.na(prostate), FALSE, prostate)) %>%
+	arrange(PUBMEDID)
+
+prostate_pubs <- gwas_classified %>% filter(prostate==TRUE)
+
+## Cervical
+gwas_classified <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, cervical) %>% 
+	filter(cervical == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "chemotherapy"),
+ 	) %>%
+	select(PUBMEDID, cervical) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(cervical = if_else(is.na(cervical), FALSE, cervical)) %>%
+	arrange(PUBMEDID)
+
+cervical_pubs <- gwas_classified %>% filter(cervical==TRUE)
+
+## CRC
+gwas_classified <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, colorectal) %>% 
+	filter(colorectal == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "metastasis|survival|toxicity|adenoma"),
+ 	) %>%
+	select(PUBMEDID, colorectal) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(colorectal = if_else(is.na(colorectal), FALSE, colorectal)) %>%
+	arrange(PUBMEDID)
+
+crc_pubs <- gwas_classified %>% filter(colorectal==TRUE)
+```
 
 # Background
 The annual cost of cancer treatment in Australia amounts to billions of dollars worth of burden on the health system. Successful identification and targeted screening of those most at risk offers a far more cost-effective means of reducing cancer burden. Compared to existing risk estimation methods that rely primarily on family-history, Polygenic Risk Assessment offers the potential for a far more precise and personalised mechanism for determining an individual's cancer risk, even in the absence of a significant family history. 
 
-To determine which malignancies are ready for clinical polygenic risk assessment, we are analysing the NHGRI-EBI Catalog of published genome-wide association studies, applying *blah* criteria to identify malignancies with robust evidence suggesting the polygenic component of their risk is reliably quantifiable.
+To determine which malignancies are ready for clinical polygenic risk assessment, we have analysed the NHGRI-EBI catalog of published genome-wide association studies to identify studies reporting cancer-associated Single Nucleotide Polymorphisms (SNPs) with strong evidence indicating these reported variants are truely associated with the malignancy of interest.
 
 # Methods
-Up-to-date publication data for all studies recorded in the GWAS Catalog was obtained using the **gwascat** package available for R via BioConductor. The data were filtered, cleaned and analysed to identify studies reporting Single Nucleotide Polymorphisms (SNPs) associated with an increase in the risk of a particular type of cancer. The reported SNPs for these malignancies were then assessed for validity by .
+Up-to-date publication data for all studies recorded in the GWAS Catalog was extracted and analysed to identify publications reporting SNPs associated with increased risk of cancer. SNPs reported for each cancer class were extracted from those publications and the reported association was examined against validation criteria designed to test the readiness of the reported association for inclusion in polygenic analysis.
 
 # Results
-We expect:
+Publication counts and total numbers of distinct SNPs reported varied greatly between cancer classes. For example `r breast_pubs %>% distinct(SNPS) %>% nrow()` breast cancer SNPs were extracted from `r breast_pubs %>% distinct(PUBMEDID) %>% nrow()` publications reporting breast cancer associations, but only `r cervical_pubs %>% distinct(SNPS) %>% nrow()` cervical cancer SNPs were extracted from `r cervical_pubs %>% distinct(PUBMEDID) %>% nrow()` publications reporting cervical cancer associations.
 
+| Cancer Class | Publications                                          | SNPs                                            |
+|---           |---                                                    |---                                              |
+| Breast       | `r breast_pubs %>% distinct(PUBMEDID) %>% nrow()`     | `r breast_pubs %>% distinct(SNPS) %>% nrow()`   |
+| Cervical     | `r cervical_pubs %>% distinct(PUBMEDID) %>% nrow()`   | `r cervical_pubs %>% distinct(SNPS) %>% nrow()` |
+| Colorectal   | `r crc_pubs %>% distinct(PUBMEDID) %>% nrow()`        | `r crc_pubs %>% distinct(SNPS) %>% nrow()`      |
+| Ovarian      | `r ovarian_pubs %>% distinct(PUBMEDID) %>% nrow()`    | `r ovarian_pubs %>% distinct(SNPS) %>% nrow()`  |
+| Prostate     | `r prostate_pubs %>% distinct(PUBMEDID) %>% nrow()`   | `r prostate_pubs %>% distinct(SNPS) %>% nrow()` |
 
 
 # Conclusion
-SNPs predisposing risk to **blah** ~blah~ and *blah* cancers were found to be have robust representation within the GWAS catalog, indicating that there may be sufficient data available to 
+In assessing the feasibility for a clinically applied polygenic risk assessment among cancer streams, it is first important to examine the validity of each risk predictor considered in the proposed risk model. To do this, it is important to consider the methods by which the risk association has been measured, especially the probability of detecting a given association by chance, as well as the reproducibility of that association.
+
+

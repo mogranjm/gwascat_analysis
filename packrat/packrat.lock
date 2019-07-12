@@ -482,17 +482,17 @@ Hash: 498643e765d1442ba7b1160a1df3abf9
 Package: papeRs
 Source: github
 Version: 0.3
-Hash: 9598dccabd8fa7233a09cd1b4c7480bb
+Hash: 605c9be403c594900d31f497b9beb060
 Requires: knitr, rmarkdown, yaml
 GithubRepo: papeRs
 GithubUsername: mogranjm
 GithubRef: master
-GithubSha1: 29d6c122b5ea4bf3feee9992dfa38ec9e049135f
+GithubSha1: 5a1d03e13fab2c0cc46cf9ea5f55519f97d518b6
 RemoteHost: api.github.com
 RemoteRepo: papeRs
 RemoteUsername: mogranjm
 RemoteRef: master
-RemoteSha: 29d6c122b5ea4bf3feee9992dfa38ec9e049135f
+RemoteSha: 5a1d03e13fab2c0cc46cf9ea5f55519f97d518b6
 
 Package: pillar
 Source: CRAN

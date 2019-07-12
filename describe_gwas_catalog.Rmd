@@ -195,21 +195,6 @@ cancer_classes %>%
 	filter(!any(c(bile_duct:testicular)))
 ```
 
-```{r}
-gwas_cancer_data %>% filter(PUBMEDID == "28649644")
-```
-
-```{r}
-bile_pubs <- filter(cancer_classes, bile_duct == TRUE)
-
-breast_pubs[str_detect(breast_pubs$traits, chemotherapy),]
-
-
-breast_pubs %>% 
-	filter(str_detect(traits, "free")) #%>% 
-	distinct(PUBMEDID)
-```
-
 ```{r define exclusion terms for breast set}
 chemotherapy <- "anastrozole|taxane|paclitaxel|trastuzumab"
 	# anastrozole - one publication:  30648747 (phamacokinetics/pharmacogenomics - SNP encodes anastrozole influx transporter)
@@ -235,7 +220,7 @@ tumour_biochem <- "estrone|androstene"
 (
 breast_selected <- cancer_classes %>% 
 	select(PUBMEDID, DISEASE.TRAIT, traits, breast) %>% 
-	distinct(PUBMEDID, .keep_all = TRUE) %>% 
+	# distinct(PUBMEDID, .keep_all = TRUE) %>% 
 	filter(breast == TRUE) %>% 
 	filter(
 		!str_detect(traits, "mortality"),          # exclude publications targeting post-diagnosis event (mortality)     - one publication:   30787463
@@ -249,23 +234,139 @@ breast_selected <- cancer_classes %>%
 )
 ```
 
-```{r how many SNPs per publication}
-SNPs <- breast_selected %>% 
-	count(PUBMEDID) 
-
-SNPs
-
-SNPs %>% tally()
-```
-
-```{r}
- breast_selected %>% 
+```{r join breast classified pubs to main dataset}
+gwas_classified <- breast_selected %>% 
 	select(PUBMEDID, breast) %>% 
 	right_join(gwas_cancer_data, by = "PUBMEDID") %>% 
 	mutate(breast = if_else(is.na(breast), FALSE, breast)) %>% 
 	arrange(PUBMEDID)
 ```
 
+```{r join prostate classified pubs to main dataset}
+prognosis <- "aggressiveness|survival"
+	# aggressiveness - one publication: 25939597
+	# survival       - one publication: 26307654
+
+treatment <- "treatment|docetaxel"
+	# treatment  - one publication: 20932654
+ 	# docetaxel  - one publication: 27143689
+
+prost_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, prostate) %>% 
+	filter(prostate == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, 'benign'),          # exclude publications benign traits                                - one publication:    30410027
+ 		!str_detect(traits, 'radiotherapy'),    # exclude publications targeting treatment response (radiotherapy)  - three publications: 27515689, 24974847, 23376709
+ 		!str_detect(traits, treatment),         # exclude publications adverse treatment effects                    - one publication:    see exclusion terms
+ 		!str_detect(traits, prognosis),         # exclude publications targeting prognosis                          - two publications:   see exclusion terms
+ 	)
+
+gwas_classified <- prost_selected %>%
+	select(PUBMEDID, prostate) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(prostate = if_else(is.na(prostate), FALSE, prostate)) %>%
+	arrange(PUBMEDID)
+```
+
+```{r join colorectal classified pubs to main dataset}
+survival <- "metastasis|survival"
+	# metastasis - one publication:    30738427
+	# survival   - three publications: 26586795, 26222057, 25866641
+
+crc_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, colorectal) %>% 
+	filter(colorectal == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, survival),            # exclude publications targeting time to non-diagnosis event        - three publications: see exclusion terms
+ 		!str_detect(traits, "toxicity"),          # exclude publications targeting adverse treatment response         - one publications:   30557370
+ 		!str_detect(traits, "adenoma"),           # exclude publications targeting benign traits                      - one publication:    29228715
+ 	)
+ 
+gwas_classified <- crc_selected %>%
+	select(PUBMEDID, colorectal) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(colorectal = if_else(is.na(colorectal), FALSE, colorectal)) %>%
+	arrange(PUBMEDID)
+```
+
+```{r join ovarian classified pubs to main dataset}
+chemotherapy <- "carboplatin|paclitaxel"
+	# carboplatin - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
+	# paclitaxel  - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
+
+ovarian_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, ovarian) %>% 
+	filter(ovarian == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, chemotherapy),        # exclude publications targeting treatment response         - one publication:  see exclusion list
+ 	)
+ 	
+gwas_classified <- ovarian_selected %>%
+	select(PUBMEDID, ovarian) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(ovarian = if_else(is.na(ovarian), FALSE, ovarian)) %>%
+	arrange(PUBMEDID)
+```
+
+```{r join cervical classified pubs to main dataset}
+cervical_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, cervical) %>% 
+	filter(cervical == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "chemotherapy"),        # exclude publications targeting treatment response - one publication: 28120872
+ 	)
+ 
+gwas_classified <- cervical_selected %>%
+	select(PUBMEDID, cervical) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(cervical = if_else(is.na(cervical), FALSE, cervical)) %>%
+	arrange(PUBMEDID)
+```
+
+```{r join blood classified pubs to main dataset}
+blood_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, blood) %>% 
+	filter(blood == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "survival"),        # exclude publications targeting post-diagnosis event - one publication: 28120872
+ 	)
+ 
+gwas_classified <- blood_selected %>%
+	select(PUBMEDID, blood) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(blood = if_else(is.na(blood), FALSE, blood)) %>%
+	arrange(PUBMEDID)
+```
+
+```{r}
+blood_pubs <- cancer_classes %>% 
+	filter(blood == TRUE)
+
+blood_pubs %>% filter(str_detect(traits, '')) %>% distinct(PUBMEDID)
+```
+
+```{r join bile_duct classified pubs to main dataset}
+bile_selected <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, bile_duct) %>% 
+	filter(bile_duct == TRUE) %>% 
+	filter(!str_detect(traits, 'time to event')) 
+
+gwas_classified <- bile_selected %>% 
+	select(PUBMEDID, bile_duct) %>% 
+	right_join(gwas_classified, by = "PUBMEDID") %>% 
+	mutate(bile_duct = if_else(is.na(bile_duct), FALSE, bile_duct)) %>% 
+	arrange(PUBMEDID)
+```
+
+
+
+```{r}
+gwas_cancer_data
+
+gwas_classified %>% 
+	filter(colorectal==TRUE) %>% 
+	distinct(SNPS, .keep_all = TRUE)
+```
 
 ```{r}
 source('functions/term_frequencies.R')

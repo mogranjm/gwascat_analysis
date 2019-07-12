@@ -1,4 +1,4 @@
-source('functions/get_current_gwas_data.R')
+source('/mnt/Projects/gwascat_analysis/functions/get_current_gwas_data.R')
 
 # require(reticulate)
 require(readr)
@@ -14,7 +14,7 @@ if(length(this_months_gwas_datafile)>=1){
 
 	print('Reading data file...')
 	gwas_data <- read_csv(
-		paste0('data/',
+		paste0('/mnt/Projects/gwascat_analysis/data/',
 			   grep(
 			   	paste0('gwas_data_',
 			   		   substr(Sys.Date(), start = 1, stop = 8),
