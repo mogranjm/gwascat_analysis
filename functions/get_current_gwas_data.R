@@ -9,7 +9,7 @@ get_current_gwasdata <- function(new_varname='gwas_data'){
 
 
 	current_gwas_data %>%
-		readr::write_csv(paste0('data/gwas_data_', download_date, '.csv'))
+		readr::write_csv(paste0(datadir, 'gwas_data_', download_date, '.csv'))
 
 	assign(new_varname, current_gwas_data, envir=.GlobalEnv)
 }
