@@ -1,27 +1,18 @@
----
-title: "Extract records of interest from the EBI GWAS Catalog"
-output:
-  html_notebook: default
-  html_document:
-    df_print: paged
----
-
-```{r setup, echo=FALSE}
-reticulate::use_condaenv('gwas-biocenv')
 library(gwascat)
 library(readr)
 library(dplyr)
 library(stringr)
 
+projroot <- rprojroot::find_rstudo_root_file()
+funcdir <- file.path(projroot, "functions")
+
 # Unique developer key used when interacting with the NCBI eutils API
 Sys.setenv(ncbi_api_key = "d96bb10ffdca4cfb6ad3c963ba2e9f155d09")
-```
 
-```{r Get live data, echo=FALSE, message=FALSE}
-source('refresh_gwas_dataset.R')
-source('functions/select_gwas_cancer.R')
+source(funcdir, "refresh_gwas_dataset.R")
+source(funcdir, "select_gwas_cancer.R")
+
 extract_cancer_data(gwas_data)
-```
 
 Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
 
