@@ -1,0 +1,65 @@
+---
+title: "Assessing the clinical applicability of polygenic risk assessment across various cancer types"
+author:
+  - James A. Morgan: 
+      institute: [one]
+      email: jamesa.morgan@petermac.org
+  - Paul A. James:
+      institute: [one, two, three]
+  - Another Author:
+      institute: [three]
+institute:
+  - one: "The Parkville Familial Cancer Centre, Peter MacCallum Cancer Centre and The Royal Melbourne Hospital, Melbourne, Victoria, Australia, 3000"
+  - two: "Cancer Genetics Laboratory, Peter MacCallum Cancer Centre, Melbourne, Victoria  3000, Australia"
+  - three: "Sir Peter MacCallum Department of Oncology, The University of Melbourne, Parkville, Victoria 3010, Australia"
+
+abstract: |
+  *Background:* Successful identification and targeted screening of individuals most at risk of cancer offers the potential of providing the most cost-effective means of   reducing cancer burden. Compared to existing risk estimation methods, Polygenic Risk Assessment offers a more precise, replicable and personalised mechanism for determining an   individual’s cancer risk, even in the absence of a significant family history.
+  To determine which malignancies currently at a stage where the risk can be reliably assessed through a polygenic risk score (PRS), we analysed the NHGRI-EBI catalog of   published genome-wide association studies (GWAS), along with a systematic literature search to identify reported cancer-associated Single Nucleotide Polymorphisms (SNPs),   individually or combined into PRS, that demonstrated strong evidence of a true association with the malignancy of interest. \n
+  
+  *Methods:* Up-to-date publication data for all studies recorded in the GWAS catalog were extracted and analysed to identify publications reporting SNPs associated with   increased cancer risk in a range of tumour types. We examined the methods used to derive each risk-association and the underlying power of GWAS to reliably detect the   association, as well as evidence of validation and recapitulation of the result. The scope of available literature was used to derive empirical criteria to assess the   scientific and clinical validity of reported SNP associations and combined PRS risk assessment for each tumour type. \n
+  
+  *Results:* The strength of evidence supporting the polygenic component of risk currently varies greatly among cancer types. For a small group of malignancies such as Breast,   Colorectal and Prostate cancers the polygenic component has been the subject of well-powered high quality studies, with large number of SNPs reported in the catalog for these   malignancies and the performance of the PRS demonstrated directly. In contrast, for other cancer such as Cervical, Thyroid and Blood cancers limited numbers of GWAS are   documented with few or no analyses of the SNPs in combination as a PRS. We provide a comparative ranking of the development of the field across cancer types. \n
+  
+  *Conclusion:* Although clinical assessment of polygenic cancer risk is becoming achievable for high-profile malignancies, more research is required for other cancers to be   included in a pan-cancer polygenic risk assessment.
+
+keywords: "kwarg1, kwarg2, kwarg3"
+date: "`r format(Sys.time(), '%B %d, %Y')`"
+
+csl: resources/bib-styles/vancouver-superscript.csl   # Modify this field to alter your bibliography style
+bibliography: resources/Endnote.xml                   # Overwrite this dummy bibliography to include your own
+
+output: 
+    papeRs::review:
+      toc: false
+---
+
+```{r setup, echo=FALSE}
+library(gwascat)
+library(dplyr)
+library(stringr)
+library(ggplot2)
+
+projroot <- rprojroot::find_rstudio_root_file()
+funcdir <- file.path(projroot, "functions")
+```
+
+```{r Get live GWAS catalog data, echo=FALSE, message=FALSE}
+source(file.path(funcdir, "refresh_gwas_dataset.R"), chdir = TRUE)
+```
+# Introduction
+
+```{r}
+# This is a code chunk. You can write R code here and the result of its execution will be displayed in the rendered document.
+# Note that code comments will be written to the output document. To exclude this, use HTML comment tags, or set the chunk option echo=FALSE
+```
+
+##### This is the 'Heading 5' tag. This template uses these as a page break
+# Body
+
+
+# Conclusion
+
+
+##### break
+# Bibliography

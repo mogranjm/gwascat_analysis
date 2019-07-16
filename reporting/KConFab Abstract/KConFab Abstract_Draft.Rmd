@@ -1,0 +1,157 @@
+---
+title: "Assessing the clinical applicability of polygenic risk assessment across various cancer streams"
+author:
+  - James A. Morgan: 
+      institute: [one]
+      email: jamesa.morgan@petermac.org
+  - Paul A. James:
+      institute: [one, two, three]
+institute:
+  - one: "The Parkville Familial Cancer Centre, Peter MacCallum Cancer Centre and The Royal Melbourne Hospital, Melbourne, Victoria, Australia, 3000"
+  - two: "Cancer Genetics Laboratory, Peter MacCallum Cancer Centre, Melbourne, Victoria  3000, Australia"
+  - three: "Sir Peter MacCallum Department of Oncology, The University of Melbourne, Parkville, Victoria 3010, Australia"
+    
+output: 
+    papeRs::abstract
+---
+```{r setup, echo=FALSE, include=FALSE}
+library(gwascat)
+library(dplyr)
+
+source('/mnt/Projects/gwascat_analysis/refresh_gwas_dataset.R')
+source('/mnt/Projects/gwascat_analysis/functions/select_gwas_cancer.R')
+extract_cancer_data(gwas_data)
+
+cancer_classes <- gwas_cancer_data %>%
+	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>%
+	mutate(
+ 		traits =           tolower(DISEASE.TRAIT),                                 # all lowercase
+		bile_duct =        if_else(str_detect(traits, "cholangio"), TRUE, FALSE),
+		bladder =          if_else(str_detect(traits, "bladder"), TRUE, FALSE),
+		blood =            if_else(str_detect(traits, "b-cell|myeloma"), TRUE, FALSE),
+		brain =            if_else(str_detect(traits, "glio"), TRUE, FALSE),
+		breast =           if_else(str_detect(traits, "breast"), TRUE, FALSE),
+		cervical =         if_else(str_detect(traits, "cervical"), TRUE, FALSE),
+		colorectal =       if_else(str_detect(traits, "colo"), TRUE, FALSE),
+		endometrial =      if_else(str_detect(traits, "endometri"), TRUE, FALSE),
+		esophageal =       if_else(str_detect(traits, "esophageal"), TRUE, FALSE),
+		gallbladder =      if_else(str_detect(traits, "gall"), TRUE, FALSE),
+		gastric =          if_else(str_detect(traits, "gastric"), TRUE, FALSE),
+		head_neck =        if_else(str_detect(traits, "oral cavity|oropharynx"), TRUE, FALSE),
+		lung =             if_else(str_detect(traits, "lung"), TRUE, FALSE),
+		neuroblastoma =    if_else(str_detect(traits, "neuroblastoma"), TRUE, FALSE),
+		ovarian =          if_else(str_detect(traits, "ovarian"), TRUE, FALSE),
+		pancreatic =       if_else(str_detect(traits, "pancrea"), TRUE, FALSE),
+		prostate =         if_else(str_detect(traits, "prostate"), TRUE, FALSE),
+		skin_or_melanoma = if_else(str_detect(traits, "melanoma|skin"), TRUE, FALSE),
+		thyroid =          if_else(str_detect(traits, "thyroid"), TRUE, FALSE),
+		testicular =       if_else(str_detect(traits, "testic"), TRUE, FALSE),
+	)
+
+## Breast
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, breast) %>%
+	filter(breast == TRUE) %>%
+	filter(
+		!str_detect(traits, "mortality|survival|anastrozole|taxane|paclitaxel|trastuzumab|tamoxifen|childhood|free|estrone|androstene")
+	) %>%
+	select(PUBMEDID, breast) %>%
+	right_join(gwas_cancer_data, by = "PUBMEDID") %>%
+	mutate(breast = if_else(is.na(breast), FALSE, breast)) %>%
+	arrange(PUBMEDID)
+
+breast_pubs <- gwas_classified %>% filter(breast==TRUE)
+
+## Ovarian
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, ovarian) %>%
+	filter(ovarian == TRUE) %>%
+	filter(
+		!str_detect(traits, "carboplatin|paclitaxel")
+	) %>%
+	select(PUBMEDID, ovarian) %>%
+	right_join(gwas_cancer_data, by = "PUBMEDID") %>%
+	mutate(ovarian = if_else(is.na(ovarian), FALSE, ovarian)) %>%
+	arrange(PUBMEDID)
+
+ovarian_pubs <- gwas_classified %>% filter(ovarian==TRUE)
+
+## Prostate
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, prostate) %>% 
+	filter(prostate == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, 'benign|aggressiveness|survival|radiotherapy|treatment|docetaxel')
+ 	) %>% 
+	select(PUBMEDID, prostate) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(prostate = if_else(is.na(prostate), FALSE, prostate)) %>%
+	arrange(PUBMEDID)
+
+prostate_pubs <- gwas_classified %>% filter(prostate==TRUE)
+
+## Cervical
+gwas_classified <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, cervical) %>% 
+	filter(cervical == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "chemotherapy"),
+ 	) %>%
+	select(PUBMEDID, cervical) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(cervical = if_else(is.na(cervical), FALSE, cervical)) %>%
+	arrange(PUBMEDID)
+
+cervical_pubs <- gwas_classified %>% filter(cervical==TRUE)
+
+## CRC
+gwas_classified <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, colorectal) %>% 
+	filter(colorectal == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "metastasis|survival|toxicity|adenoma"),
+ 	) %>%
+	select(PUBMEDID, colorectal) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(colorectal = if_else(is.na(colorectal), FALSE, colorectal)) %>%
+	arrange(PUBMEDID)
+
+crc_pubs <- gwas_classified %>% filter(colorectal==TRUE)
+
+## Thyroid
+gwas_classified <- cancer_classes %>% 
+	select(PUBMEDID, DISEASE.TRAIT, traits, thyroid) %>% 
+	filter(thyroid == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "radiation"),
+ 	) %>%
+	select(PUBMEDID, thyroid) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(thyroid = if_else(is.na(thyroid), FALSE, thyroid)) %>%
+	arrange(PUBMEDID)
+
+thyroid_pubs <- gwas_classified %>% filter(thyroid==TRUE)
+
+## Blood
+gwas_classified <- cancer_classes %>%
+	select(PUBMEDID, DISEASE.TRAIT, traits, blood) %>% 
+	filter(blood == TRUE) %>% 
+ 	filter(
+ 		!str_detect(traits, "survival"),
+ 	) %>% 
+	select(PUBMEDID, blood) %>%
+	right_join(gwas_classified, by = "PUBMEDID") %>%
+	mutate(blood = if_else(is.na(blood), FALSE, blood)) %>%
+	arrange(PUBMEDID)
+
+blood_pubs <- gwas_classified %>% filter(blood==TRUE)
+```
+
+*Background:* Successful identification and targeted screening of individuals most at risk of cancer offers the potential of providing the most cost-effective means of reducing cancer burden. Compared to existing risk estimation methods, Polygenic Risk Assessment offers a more precise, replicable and personalised mechanism for determining an individual’s cancer risk, even in the absence of a significant family history.
+To determine which malignancies currently at a stage where the risk can be reliably assessed through a polygenic risk score (PRS), we analysed the NHGRI-EBI catalog of published genome-wide association studies (GWAS), along with a systematic literature search to identify reported cancer-associated Single Nucleotide Polymorphisms (SNPs), individually or combined into PRS, that demonstrated strong evidence of a true association with the malignancy of interest.
+
+*Methods:* Up-to-date publication data for all studies recorded in the GWAS catalog were extracted and analysed to identify publications reporting SNPs associated with increased cancer risk in a range of tumour types. We examined the methods used to derive each risk-association and the underlying power of GWAS to reliably detect the association, as well as evidence of validation and recapitulation of the result. The scope of available literature was used to derive empirical criteria to assess the scientific and clinical validity of reported SNP associations and combined PRS risk assessment for each tumour type
+
+*Results:* The strength of evidence supporting the polygenic component of risk currently varies greatly among cancer types. For a small group of malignancies such as Breast, Colorectal and Prostate cancers the polygenic component has been the subject of well-powered high quality studies, with large number of SNPs reported in the catalog for these malignancies and the performance of the PRS demonstrated directly. In contrast, for other cancer such as Cervical, Thyroid and Blood cancers limited numbers of GWAS are documented with few or no analyses of the SNPs in combination as a PRS. We provide a comparative ranking of the development of the field across cancer types.
+
+*Conclusion:* Although clinical assessment of polygenic cancer risk is becoming achievable for high-profile malignancies, more research is required for other cancers to be included in a pan-cancer polygenic risk assessment.
