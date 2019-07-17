@@ -3,11 +3,11 @@ extract_cancer_data <- function(data, new_varname='gwas_cancer_data'){
 	require(stringr)
 
 	cancer_data <- data %>%
-		dplyr::filter(
-			stringr::str_detect(DISEASE.TRAIT, stringr::fixed("cancer", ignore_case = TRUE)) | stringr::str_detect(DISEASE.TRAIT, "oma[^\\w]"),
-			!stringr::str_detect(DISEASE.TRAIT, stringr::fixed("glaucoma", ignore_case = TRUE)),
-			!stringr::str_detect(DISEASE.TRAIT, stringr::fixed("tripanosoma", ignore_case = TRUE)),
-			!stringr::str_detect(DISEASE.TRAIT, stringr::fixed("hematoma", ignore_case = TRUE))
+		filter(
+			str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma([^\\w]|$)"),
+			!str_detect(DISEASE.TRAIT, fixed("glaucoma", ignore_case = TRUE)),
+			!str_detect(DISEASE.TRAIT, fixed("tripanosoma", ignore_case = TRUE)),
+			!str_detect(DISEASE.TRAIT, fixed("hematoma", ignore_case = TRUE))
 		) %>%
 		dplyr::arrange(dplyr::desc(PUBMEDID))
 
@@ -17,8 +17,8 @@ extract_cancer_data <- function(data, new_varname='gwas_cancer_data'){
 # #### Positive RegEx matches (include)
 # * "cancer"
 # + Match the pattern "cancer"
-# * "oma[^\\w]"
-# + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
+# * "oma([^\\w]|$)"
+# + Match the pattern "oma" where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore) or a line ending. Effectively matches any word with the suffix "oma"
 # + Included: Melan**oma**, Carcin**oma**, etc...
 # + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic
 # + **NOTE:** *Need to validate that no cancer records are excluded*
@@ -26,7 +26,7 @@ extract_cancer_data <- function(data, new_varname='gwas_cancer_data'){
 # data <- gwas_data %>%
 # 	as_tibble() %>%
 # 	filter(
-# 		str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma[^\\w]")
+# 		str_detect(DISEASE.TRAIT, fixed("cancer", ignore_case = TRUE)) | str_detect(DISEASE.TRAIT, "oma([^\\w]|$)")
 # 	)
 # ```
 #
