@@ -533,7 +533,6 @@ gwas_classified <- selected %>%
 	arrange(PUBMEDID)
 ```
 
-
 ```{r}
 gathered <- gwas_classified %>% 
     tidyr::gather(cancer, tf, biliary:cancer_unspecified) %>% 
@@ -548,12 +547,3 @@ gathered %>%
     arrange(cancer) %>% 
     write_csv(file.path(projroot, "reporting/gwas_cancer_classifications.csv"))
 ```
-
-```{r}
-gathered %>% 
-    filter(str_detect(DISEASE.TRAIT, "[S|s]quamous")) %>% 
-    distinct(PUBMEDID, DISEASE.TRAIT, cancer) %>% 
-    arrange(PUBMEDID)
-```
-
-
