@@ -102,28 +102,29 @@ cancer_classes <- gwas_cancer_data %>%
 	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>% 
 	mutate(
 	    traits = tolower(DISEASE.TRAIT),                                 # all lowercase,
-	    bile_duct =          if_else(str_detect(traits, "cholangio"), TRUE, FALSE),
+	    biliary =            if_else(str_detect(traits, "cholangio|gall"), TRUE, FALSE),     # exclude cholangiocarcinomas reported as a side effect of PSC
 	    bladder =            if_else(str_detect(traits, "(^| )bladder"), TRUE, FALSE),
-	    blood =              if_else(str_detect(traits, "b-cell|myeloma"), TRUE, FALSE),
-	    brain =              if_else(str_detect(traits, "glio"), TRUE, FALSE),
+	    cns =                if_else(str_detect(traits, "glio|mening"), TRUE, FALSE),
 	    breast =             if_else(str_detect(traits, "breast"), TRUE, FALSE),
 	    cervical =           if_else(str_detect(traits, "cervical"), TRUE, FALSE),
 	    colorectal =         if_else(str_detect(traits, "colo"), TRUE, FALSE),
 	    endometrial =        if_else(str_detect(traits, "endometri"), TRUE, FALSE),
-	    esophageal =         if_else(str_detect(traits, "esophageal"), TRUE, FALSE),
-	    gallbladder =        if_else(str_detect(traits, "gall"), TRUE, FALSE),
+	    oesophageal =        if_else(str_detect(traits, "esoph"), TRUE, FALSE),
 	    gastric =            if_else(str_detect(traits, "gastric"), TRUE, FALSE),
-	    head_neck =          if_else(str_detect(traits, "oral cavity|oropharynx|nasoph"), TRUE, FALSE),
+	    head_neck =          if_else(str_detect(traits, "oral cavity|aryn"), TRUE, FALSE),
 	    kidney =             if_else(str_detect(traits, "renal"), TRUE, FALSE),
+	    leukemia =           if_else(str_detect(traits, "leukemia"), TRUE, FALSE),
 	    liver =              if_else(str_detect(traits, "hepato"), TRUE, FALSE),
 	    lung =               if_else(str_detect(traits, "lung"), TRUE, FALSE),
-	    lymphoma =           if_else(str_detect(traits, "lymph"), TRUE, FALSE),
+	    lymphoma =           if_else(str_detect(traits, "lymphom"), TRUE, FALSE),
+	    melanoma =           if_else(str_detect(traits, "(^|^-|\\s)melanoma"), TRUE, FALSE),
+	    multiple_myeloma =   if_else(str_detect(traits, "myeloma"), TRUE, FALSE),
 	    neuroblastoma =      if_else(str_detect(traits, "neuroblastoma"), TRUE, FALSE),
 	    ovarian =            if_else(str_detect(traits, "ovarian"), TRUE, FALSE),
 	    pancreatic =         if_else(str_detect(traits, "pancrea"), TRUE, FALSE),
 	    prostate =           if_else(str_detect(traits, "prostate"), TRUE, FALSE),
 	    sarcoma =            if_else(str_detect(traits, "sarcoma"), TRUE, FALSE),
-	    skin_or_melanoma =   if_else(str_detect(traits, "melanoma|skin|basal|keratinocyte|squamous"), TRUE, FALSE),
+	    skin_non_melanoma =  if_else(str_detect(traits, "skin|basal|keratinocyte|squamous"), TRUE, FALSE),
 	    thyroid =            if_else(str_detect(traits, "thyroid"), TRUE, FALSE),
 	    testicular =         if_else(str_detect(traits, "testic"), TRUE, FALSE),
 	    cancer_unspecified = if_else(str_detect(traits, "^cancer"), TRUE, FALSE)
@@ -131,58 +132,80 @@ cancer_classes <- gwas_cancer_data %>%
     filter(!str_detect(traits, "body mass index")) # Remove 28044437 BMI change in cancer patients
 ```
 
+```{r}
+# cancer_classes %>% 
+#     filter(str_detect(DISEASE.TRAIT, " skin|basal|keratinocyte|squamous")) %>%  # Remove 28044437 BMI change in cancer patients
+#     # filter()
+#     select(DISEASE.TRAIT)
 
+```
 
 ```{r}
 # Check whether any publications are not classified
 cancer_classes %>% 
-	filter(!any(c(bile_duct:cancer_unspecified)))
-
-cancer_classes %>% 
     filter(
-        bile_duct == FALSE,
+        biliary == FALSE,
         bladder == FALSE,
-        blood == FALSE,
-        brain == FALSE,
+        cns == FALSE,
         breast == FALSE,
         cervical == FALSE,
         colorectal == FALSE,
         endometrial == FALSE,
-        esophageal == FALSE,
-        gallbladder == FALSE,
+        oesophageal == FALSE,
         gastric == FALSE,
         head_neck == FALSE,
         kidney == FALSE,
+        leukemia == FALSE,
         liver == FALSE,
         lung == FALSE,
         lymphoma == FALSE,
+        melanoma == FALSE,
+        multiple_myeloma == FALSE,
         neuroblastoma == FALSE,
         ovarian == FALSE,
         pancreatic == FALSE,
         prostate == FALSE,
         sarcoma == FALSE,
-        skin_or_melanoma == FALSE,
+        skin_non_melanoma == FALSE,
         thyroid == FALSE,
         testicular == FALSE,
         cancer_unspecified == FALSE,
-    )
+    ) %>% distinct(DISEASE.TRAIT)
+
 ```
 
+```{r empty df to store identified SNP records}
+selected <- matrix(ncol=length(colnames(cancer_classes)),nrow=0) %>% 
+    as.data.frame() %>%
+    setNames(colnames(cancer_classes))
+```
 
-Sarcoma
-Lymphoma
-Kidney (renal)
-Skin: BCC SCC Keratinocyte
-Cancer Adenocarcinoma
-Liver
-```{r breast_pubs}
-chemotherapy <- "anastrozole|taxane|paclitaxel|trastuzumab"
+```{r select relevant biliary tract (bile duct/gallbladder) SNPs}
+selected <- cancer_classes %>% 
+	filter(
+	    biliary == TRUE,
+	    !str_detect(traits, "cholangitis"),
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant bladder SNPs}
+selected <- cancer_classes %>% 
+	filter(
+	    bladder == TRUE,
+ 		!str_detect(traits, "smoking") # exclude publications on smoking interaction - one pub: 24662972
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant breast SNPs}
+chemotherapy <- "anastrozole|taxane|paclitaxel|trastuzumab|alopecia|bevacizumab"
 	# anastrozole - one publication:  30648747 (phamacokinetics/pharmacogenomics - SNP encodes anastrozole influx transporter)
 	# taxane      - one publication:  29278617
 	# paclitaxel  - two publications: 28763429, 24025145 (adverse effects: alopecia/change in LVEF)
 	# trastuzumab - one publication:  28763429 (adverse effects: change in LVEF)
 
-hormone_therapy <- "tamoxifen"    
+hormone_therapy <- "tamoxifen|hormone therapy"    
 	# tamoxifen   - two publications: 30161160, 22180457
 
 radiation <- "childhood"
@@ -191,7 +214,8 @@ radiation <- "childhood"
 survival_time <- "free"
 	# free        - two publications: 27758888, 25867717 (Cancer-free interval post treatment)
 
-tumour_biochem <- "estrone|androstene"
+tumour_biochem <- "estradiol|estrone|androstene"
+    # estradiol 23518928
 	# estrone     - one publication:  28429243 (hormone levels in resected early-stage tumours)
 	# androstene  - one publication:  28429243 
 
@@ -204,8 +228,9 @@ selected <- cancer_classes %>%
         !str_detect(traits, radiation),            # exclude publications targeting treatment exposure (radiation)       - one publication :  see exclusion terms
         !str_detect(traits, survival_time),        # exclude publications characterising recurrent disease               - two publications:  see exclusion terms
         !str_detect(traits, tumour_biochem),       # exclude publications characterising tumour environment              - one publication :  see exclusion terms
-        !str_detect(traits, "survival"),           # exclude publications predicting post-diagnosis survival             - six publications:  29423119, 25964295, 25890600, 25867717, 25526632, 22232737
-    )
+        !str_detect(traits, "survival|prognosis"), # exclude publications predicting post-diagnosis survival             - six publications:  29423119, 25964295, 25890600, 25867717, 25526632, 22232737, 23319801
+    ) %>% 
+    rbind(selected)
 
 rm(
     "chemotherapy",
@@ -216,7 +241,171 @@ rm(
    )
 ```
 
-```{r join prostate classified pubs to main dataset}
+```{r select relevant cervical SNPs}
+selected <- cancer_classes %>% 
+	filter(
+	    cervical == TRUE,
+	    !str_detect(traits, "chemotherapy"),        # exclude publications targeting treatment response - one publication: 28120872
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant cns (brain)) SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    cns == TRUE,
+ 	 ) %>%
+    rbind(selected)
+```
+
+```{r select relevant colorectal SNPs}
+survival <- "metastasis|survival"
+	# metastasis - one publication:    30738427
+	# survival   - three publications: 26586795, 26222057, 25866641
+
+selected <- cancer_classes %>%
+    filter(
+        colorectal == TRUE,
+        !str_detect(traits, survival),            # exclude publications targeting time to non-diagnosis event        - three publications: see exclusion terms
+        !str_detect(traits, "toxicity"),          # exclude publications targeting adverse treatment response         - one publications:   30557370
+        !str_detect(traits, "adenoma"),           # exclude publications targeting benign traits                      - one publication:    29228715
+        !str_detect(traits, "cholangitis"),       # exclude publications targeting disease interaction                - one publication:    28779025
+        !str_detect(traits, "interaction"),     # exclude publications targeting exposure factors                   - one publication:    27723779, 26766742, 25781442, 24743840
+    ) %>% 
+    rbind(selected)
+
+rm("survival")
+```
+
+```{r select relevant endometrial SNPs}
+selected <- cancer_classes %>% 
+	filter(
+	    endometrial == TRUE,
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant gastric SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    gastric == TRUE,
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant head/neck SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    head_neck == TRUE,
+	    !str_detect(traits, "radiation") # exclude adverse treatment effects - 1 pub 30299488
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant kidney SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    kidney == TRUE,
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant leukemia (blood) SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    leukemia == TRUE,
+	    !str_detect(traits, "response|therapy|thiopurine|asparaginase|vincristine|methotrexate|kinetics")
+	) %>%
+    rbind(selected)
+```
+
+```{r select relevant liver SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    liver == TRUE,
+	    !str_detect(traits, "response|survival|hepatitis")
+	) %>%
+    rbind(selected)
+```
+
+```{r select relevant lung SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    lung == TRUE,
+	    !str_detect(traits, "smoker|interaction|platinum|irinotecan|survival|recurrence")
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant lymphoma SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    lymphoma == TRUE,
+	    !str_detect(traits, "survival")
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant multiple myeloma (blood) SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    multiple_myeloma == TRUE,
+	    !str_detect(traits, "survival|infection|neuropathy"),        # exclude publications targeting myeloma-secondary event - three publications: 28120872, 29594489, 28317148
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant melanoma SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    melanoma == TRUE,
+	    # !str_detect(traits, "survival|infection|neuropathy"),        # exclude publications targeting myeloma-secondary event - three publications: 28120872, 29594489, 28317148
+	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant neuroblastoma SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    neuroblastoma == TRUE,
+ 	) %>%
+    rbind(selected)
+```
+
+```{r select relevant oesophageal SNPs}
+selected <- cancer_classes %>% 
+	filter(
+	    oesophageal == TRUE,
+	    !str_detect(traits, "interaction|survival")
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant ovarian SNPs}
+chemotherapy <- "carboplatin|paclitaxel"
+	# carboplatin - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
+	# paclitaxel  - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
+
+selected <- cancer_classes %>%
+	filter(
+	    ovarian == TRUE,
+	    !str_detect(traits, chemotherapy),        # exclude publications targeting treatment response         - one publication:  see exclusion list
+	) %>% 
+    rbind(selected)
+
+rm("chemotherapy")
+```
+
+```{r select relevant pancreatic SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    pancreatic == TRUE,
+	    !str_detect(traits, "gemcitabine|survival|pancreatitis")
+ 	) %>% 
+    rbind(selected)
+```
+
+```{r select relevant prostate SNPs}
 prognosis <- "aggressiveness|survival"
 	# aggressiveness - one publication: 25939597
 	# survival       - one publication: 26307654
@@ -232,230 +421,139 @@ treatment <- "treatment|docetaxel|radiotherapy"
 	    !str_detect(traits, 'benign'),          # exclude publications targeting benign traits             - one publication:    30410027
 	    !str_detect(traits, treatment),         # exclude publications targeting adverse treatment effects - five publications:    see exclusion terms
 	    !str_detect(traits, prognosis),         # exclude publications targeting prognosis                 - two publications:   see exclusion terms
-	) %>% 
+	) %>%
     rbind(selected)
 
 rm("prognosis",
    "treatment")
-
 ```
 
-```{r join colorectal classified pubs to main dataset}
-survival <- "metastasis|survival"
-	# metastasis - one publication:    30738427
-	# survival   - three publications: 26586795, 26222057, 25866641
-
-selected <- cancer_classes %>% 
-    filter(
-        colorectal == TRUE,
-        !str_detect(traits, survival),            # exclude publications targeting time to non-diagnosis event        - three publications: see exclusion terms
-        !str_detect(traits, "toxicity"),          # exclude publications targeting adverse treatment response         - one publications:   30557370
-        !str_detect(traits, "adenoma"),           # exclude publications targeting benign traits                      - one publication:    29228715
-    ) %>% 
-    rbind(selected)
-
-rm("survival")
-```
-
-```{r join ovarian classified pubs to main dataset}
-chemotherapy <- "carboplatin|paclitaxel"
-	# carboplatin - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
-	# paclitaxel  - three publications 29367611 (pharmacokinetics), 28935272 (progression-free survival), 28935272 (treatment response)
-
+```{r select relevant sarcoma SNPs}
 selected <- cancer_classes %>%
 	filter(
-	    ovarian == TRUE,
-	    !str_detect(traits, chemotherapy),        # exclude publications targeting treatment response         - one publication:  see exclusion list
-	) %>% 
+	    sarcoma == TRUE,
+	    !str_detect(traits, "survival|metastasis")
+ 	) %>% 
     rbind(selected)
-
-rm("chemotherapy")
 ```
 
-```{r join cervical classified pubs to main dataset}
-selected <- cancer_classes %>% 
+```{r select relevant skin SNPs}
+selected <- cancer_classes %>%
 	filter(
-	    cervical == TRUE,
-	    !str_detect(traits, "chemotherapy"),        # exclude publications targeting treatment response - one publication: 28120872
-	) %>% 
+	    skin_non_melanoma == TRUE,
+	    !str_detect(traits, "toxicity|pain|survival")
+ 	) %>% 
     rbind(selected)
 ```
 
-```{r join blood classified pubs to main dataset}
-selected <- cancer_classes %>% 
-	filter(
-	    blood == TRUE,
-	    !str_detect(traits, "survival|infection|neuropathy"),        # exclude publications targeting myeloma-secondary event - three publications: 28120872, 29594489, 28317148
-	) %>% 
-    rbind(selected)
-```
-
-```{r join bile_duct classified pubs to main dataset}
-selected <- cancer_classes %>% 
-	filter(
-	    bile_duct == TRUE,
-	    !str_detect(traits, 'time to event')
-	) %>% 
-    rbind(selected)
-
-```
-
-```{r}
-selected <- cancer_classes %>% 
+```{r select relevant thyroid SNPs}
+selected <- cancer_classes %>%
 	filter(
 	    thyroid == TRUE,
  		!str_detect(traits, "radiation"), # exclude publications with additional exposure factors - one publication: 20350937
  	) %>% 
     rbind(selected)
 ```
-# UP TO HERE
-```{r}
-selected <- cancer_classes %>% 
-	filter(
-	    bladder == TRUE,
- 		!str_detect(traits, "smoking") # exclude publications on smoking interaction - one pub: 24662972
- 	) %>% 
-    rbind(selected)
-```
 
-```{r}
-selected <- cancer_classes %>% 
-	filter(
-	    brain == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>% 
-	filter(
-	    endometrial == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>% 
-	filter(
-	    esophageal == TRUE,
-	    !str_detect(traits, "interaction|survival")
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
+```{r select relevant testicular SNPs}
 selected <- cancer_classes %>%
-	filter(
-	    gallbladder == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    gastric == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    head_neck == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r select relevant liver pubs}
-selected <- cancer_classes %>%
-	filter(
-	    liver == TRUE,
-	    !str_detect(traits, "response|survival|hepatitis")
-	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    lung == TRUE,
-	    !str_detect(traits, "smoker|interaction")
- 	) %>% 
-    rbind(selected)
-```
-
-```{r select relevant lymphoma pubs}
-selected <- cancer_classes %>%
-	filter(
-	    lymphoma == TRUE,
-	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    neuroblastoma == TRUE,
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    pancreatic == TRUE,
-	    !str_detect(traits, "gemcitabine|survival")
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-selected <- cancer_classes %>%
-	filter(
-	    skin_or_melanoma == TRUE,
-	    !str_detect(traits, "toxicity")
- 	) %>% 
-    rbind(selected)
-```
-
-```{r}
-# selected <- 
-cancer_classes %>%
 	filter(
 	    testicular == TRUE,
  	) %>% 
     rbind(selected)
 ```
 
+```{r select relevant "Cancer" SNPs}
+selected <- cancer_classes %>%
+	filter(
+	    cancer_unspecified == TRUE,
+ 	) %>% 
+    rbind(selected)
+```
+
 ```{r bind}
 gwas_classified <- selected %>%
-	right_join(gwas_cancer_data, by = "PUBMEDID") %>%
+	inner_join(gwas_cancer_data, by = c("PUBMEDID","DISEASE.TRAIT")) %>%
 	mutate(
-	    bile_duct = if_else(is.na(bile_duct), FALSE, bile_duct),
+	    biliary = if_else(is.na(biliary), FALSE, biliary),
 	    bladder = if_else(is.na(bladder), FALSE, bladder),
-	    blood = if_else(is.na(blood), FALSE, blood),
-	    brain = if_else(is.na(brain), FALSE, brain),
+	    cns = if_else(is.na(cns), FALSE, cns),
 	    breast = if_else(is.na(breast), FALSE, breast),
 	    cervical = if_else(is.na(cervical), FALSE, cervical),
 	    colorectal = if_else(is.na(colorectal), FALSE, colorectal),
 	    endometrial = if_else(is.na(endometrial), FALSE, endometrial),
-	    esophageal = if_else(is.na(esophageal), FALSE, esophageal),
-	    gallbladder = if_else(is.na(gallbladder), FALSE, gallbladder),
+	    oesophageal = if_else(is.na(oesophageal), FALSE, oesophageal),
 	    gastric = if_else(is.na(gastric), FALSE, gastric),
 	    head_neck = if_else(is.na(head_neck), FALSE, head_neck),
+	    kidney = if_else(is.na(kidney), FALSE, kidney),
+	    leukemia = if_else(is.na(leukemia), FALSE, leukemia),
+	    liver = if_else(is.na(liver), FALSE, liver),
 	    lung = if_else(is.na(lung), FALSE, lung),
+	    lymphoma = if_else(is.na(lymphoma), FALSE, lymphoma),
+	    melanoma = if_else(is.na(melanoma), FALSE, melanoma),
+	    multiple_myeloma = if_else(is.na(multiple_myeloma), FALSE, multiple_myeloma),
 	    neuroblastoma = if_else(is.na(neuroblastoma), FALSE, neuroblastoma),
 	    ovarian = if_else(is.na(ovarian), FALSE, ovarian),
 	    pancreatic = if_else(is.na(pancreatic), FALSE, pancreatic),
 	    prostate = if_else(is.na(prostate), FALSE, prostate),
-	    skin_or_melanoma = if_else(is.na(skin_or_melanoma), FALSE, skin_or_melanoma),
+	    sarcoma = if_else(is.na(sarcoma), FALSE, sarcoma),
+	    skin_non_melanoma = if_else(is.na(skin_non_melanoma), FALSE, skin_non_melanoma),
 	    thyroid = if_else(is.na(thyroid), FALSE, thyroid),
 	    testicular = if_else(is.na(testicular), FALSE, testicular),
+	    cancer_unspecified = if_else(is.na(cancer_unspecified), FALSE, cancer_unspecified),
 	) %>%
-    distinct(PUBMEDID, SNPS, .keep_all = TRUE) %>% 
+    distinct(PUBMEDID, SNPS,
+             biliary,
+             bladder,
+             breast,
+             cervical,
+             cns,
+             colorectal,
+             endometrial,
+             gastric,
+             head_neck,
+             kidney,
+             leukemia,
+             liver,
+             lung,
+             lymphoma,
+             melanoma,
+             multiple_myeloma,
+             neuroblastoma,
+             oesophageal,
+             ovarian,
+             pancreatic,
+             prostate,
+             sarcoma,
+             skin_non_melanoma,
+             thyroid,
+             testicular,
+             cancer_unspecified,
+             .keep_all = TRUE) %>% 
 	arrange(PUBMEDID)
 ```
 
+
+```{r}
+gathered <- gwas_classified %>% 
+    tidyr::gather(cancer, tf, biliary:cancer_unspecified) %>% 
+    filter(tf==1) %>% 
+    select(-c(tf, traits, start:strand))
+
+```
+
+```{r}
+gathered %>% 
+    distinct(cancer, DISEASE.TRAIT) %>% 
+    arrange(cancer) %>% 
+    write_csv(file.path(projroot, "reporting/gwas_cancer_classifications.csv"))
+```
+
+```{r}
+gathered %>% 
+    filter(str_detect(DISEASE.TRAIT, "[S|s]quamous")) %>% 
+    distinct(PUBMEDID, DISEASE.TRAIT, cancer) %>% 
+    arrange(PUBMEDID)
+```
 
 
