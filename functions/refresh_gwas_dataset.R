@@ -17,7 +17,7 @@ if(length(this_months_gwas_datafile)>=1){
 			       paste0('gwas_data_',
 			              substr(Sys.Date(), start = 1, stop = 8),
 			              '*'),
-			       list.files("../data")[-1], value=TRUE)
+			       rev(list.files("../data"))[1], value=TRUE)
 		)
 	)
 } else {
