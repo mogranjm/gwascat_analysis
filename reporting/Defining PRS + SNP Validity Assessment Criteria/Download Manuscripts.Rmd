@@ -1,0 +1,58 @@
+---
+title: "Download Available PDF Manuscripts"
+output: html_notebook
+---
+```{r setup}
+library(dplyr)
+
+projroot <- rprojroot::find_rstudio_root_file()
+funcdir <- file.path(projroot, "functions")
+datadir <- file.path(projroot, "data")
+
+gwas_data <- readr::read_csv(file.path(datadir, "gwas_cancer_classifications.csv"))
+```
+
+```{r breast_pubs}
+breast_pubs <- gwas_data %>% 
+    filter(cancer_class == "breast")
+
+breast_pmid <- breast_pubs %>% 
+    distinct(PUBMEDID) %>% 
+    pull()
+```
+
+`r breast_pubs %>% count(SNPS) %>% nrow()` breast cancer SNPs identified from `r breast_pubs %>% count(PUBMEDID) %>% nrow()` publications
+
+```{r read in open access pmc publication data}
+ftp_data <- read_csv(file.path(datadir, "oa_file_list.csv"))
+```
+
+```{r get available breast pdfs}
+
+avail_pdf <- ftp_data %>% 
+    filter(PMID %in% breast_pmid)
+
+for(i in 1:nrow(avail_pdf)){
+    dir <- file.path(datadir, 'pubs', 'breast')
+
+    if(!dir.exists(dir)){
+        dir.create(dir, recursive = TRUE)
+        }
+
+    tar <- avail_pdf$File[i]
+
+    url <- paste0('ftp://ftp.ncbi.nlm.nih.gov/pub/pmc/', tar)
+    curl::curl_download(url, destfile = file.path(dir, paste0(avail_pdf$PMID[i], ".tar.gz"))) %>% untar(exdir = dir)
+
+    file.remove(file.path(dir, paste0(avail_pdf$PMID[i], ".tar.gz")))
+    file.rename(file.path(dir, avail_pdf$`Accession ID`[i]), file.path(dir, avail_pdf$PMID[i]))
+}
+```
+
+```{r}
+unavail_pdf <- breast_pmid[!breast_pmid %in% avail_pdf$PMID]
+```
+```{r}
+length(breast_pmid)
+length(unavail_pdf)
+```

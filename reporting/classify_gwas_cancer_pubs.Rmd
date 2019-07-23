@@ -60,8 +60,8 @@ The intent here is to isolate only those records that have some kind of relevanc
 #### Positive RegEx matches (include)
 * "cancer"
     + Match the pattern "cancer"
-* "oma[^\\w]"
-    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore). Effectively matches any word with the suffix "oma"
+* "oma([^\\w]|$)"
+    + Match the pattern "oma" only where it is not followed by a "word character" (i.e. ASCII letter, digit or underscore) OR where it is followed by a line ending. Effectively matches any word with the suffix "oma"
     + Included: Melan**oma**, Carcin**oma**, etc...
     + Not included: Chr**oma**tosis, Bi**oma**rker, S**oma**tic 
     + **NOTE:** *Need to validate that no cancer records are excluded*
@@ -81,19 +81,6 @@ The intent here is to isolate only those records that have some kind of relevanc
 source(file.path(funcdir, "select_gwas_cancer.R"))
 extract_cancer_data(gwas_data)
 ```
-
-Now we should have a set of records that only include SNPs that are associated with traits related to cancer.
-
-#### Describe Catalog - Pre Clustering
-
-#### Thematic Analysis
-Although we've reduced our dataset to cancer-related records, this includes a wide spectrum of traits.
-
-For example, there are SNPs that predict cancer risk (these are the ones we're primarily looking for), but these are often in the context of a particular disease type/subtype or causative characteristic. It is important to stratify these.
-
-In addition, there are SNPs that predict prognosis, treatment response, adverse effects, confounding interactions, etc. Suffice to say that there are many more considerations to make before we begin to analyse the disease associations.
-
-This dataset is again reduced, this time to unique records. This dataframe is used for classification via title analysis (K-Means Clustering)
 
 ```{r}
 # Prepare titles for classification
@@ -535,15 +522,14 @@ gwas_classified <- selected %>%
 
 ```{r}
 gathered <- gwas_classified %>% 
-    tidyr::gather(cancer, tf, biliary:cancer_unspecified) %>% 
+    tidyr::gather(cancer_class, tf, biliary:cancer_unspecified) %>% 
     filter(tf==1) %>% 
-    select(-c(tf, traits, start:strand))
-
+    dplyr::select(-c(tf, traits, start:strand))
 ```
 
 ```{r}
 gathered %>% 
-    distinct(cancer, DISEASE.TRAIT) %>% 
-    arrange(cancer) %>% 
-    write_csv(file.path(projroot, "reporting/gwas_cancer_classifications.csv"))
+    arrange(cancer_class) %>% 
+    write_csv(file.path(projroot, "data/gwas_cancer_classifications.csv"))
 ```
+

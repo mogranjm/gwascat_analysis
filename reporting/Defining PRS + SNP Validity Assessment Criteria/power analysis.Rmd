@@ -1,0 +1,33 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup}
+library(dplyr)
+library(stringr)
+
+projdir <- rprojroot::find_rstudio_root_file()
+datadir <- file.path(projdir, "data")
+
+classified_gwas_cancers <- readr::read_csv(file.path(datadir, "gwas_cancer_classifications.csv"))
+```
+
+```{r}
+classified_gwas_cancers %>% 
+    filter(cancer_class == "breast") %>% 
+    mutate(
+        INITIAL.SAMPLE.SIZE = str_replace_all(INITIAL.SAMPLE.SIZE, "(?<=[a-z]),", ";"),
+        INITIAL.SAMPLE.SIZE = str_remove_all(INITIAL.SAMPLE.SIZE, ","),
+        cases = str_extract(INITIAL.SAMPLE.SIZE, "[0-9]+(?=.*[cases|affected])"),
+        controls = str_extract(INITIAL.SAMPLE.SIZE, 
+                               "(?<=; )[0-9]+(?=.*[controls]|[unaffected]|[negative cases])")
+    ) %>% 
+    select(INITIAL.SAMPLE.SIZE, cases, controls) %>% 
+    filter(
+        is.na(controls)    
+    )
+        str_detect(INITIAL.SAMPLE.SIZE, "affected"))
+# str_extract_all(t, "[0-9,]+(?=.*cases)")
+
+```
+
