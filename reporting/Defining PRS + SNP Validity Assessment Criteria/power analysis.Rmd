@@ -6,6 +6,8 @@ output: html_notebook
 library(dplyr)
 library(stringr)
 
+api_key <- "d96bb10ffdca4cfb6ad3c963ba2e9f155d09"
+
 projdir <- rprojroot::find_rstudio_root_file()
 datadir <- file.path(projdir, "data")
 
@@ -14,20 +16,55 @@ classified_gwas_cancers <- readr::read_csv(file.path(datadir, "gwas_cancer_class
 
 ```{r}
 classified_gwas_cancers %>% 
-    filter(cancer_class == "breast") %>% 
-    mutate(
+    filter( # Restrict analysis to breast cancer, not including studies assessing receptor status
+        cancer_class == "breast",
+        !str_detect(DISEASE.TRAIT, "status")
+        ) %>%
+    mutate( # Clean and extract sample sizes (case/control) from initial test set
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, " affected", "cases"),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, " unaffected", "controls"),
         INITIAL.SAMPLE.SIZE = str_replace_all(INITIAL.SAMPLE.SIZE, "(?<=[a-z]),", ";"),
         INITIAL.SAMPLE.SIZE = str_remove_all(INITIAL.SAMPLE.SIZE, ","),
-        cases = str_extract(INITIAL.SAMPLE.SIZE, "[0-9]+(?=.*[cases|affected])"),
-        controls = str_extract(INITIAL.SAMPLE.SIZE, 
-                               "(?<=; )[0-9]+(?=.*[controls]|[unaffected]|[negative cases])")
+        init_cases          = str_extract(INITIAL.SAMPLE.SIZE, "[0-9]+(?=.*cases)"),
+        init_controls       = str_extract(INITIAL.SAMPLE.SIZE, "(?<=; )[0-9]+(?=.*controls)"),
+    ) %>%
+    mutate( # Clean and extract sample sizes (case/control) from replication set
+        replicated              = !is.na(REPLICATION.SAMPLE.SIZE),
+        REPLICATION.SAMPLE.SIZE = str_replace_all(REPLICATION.SAMPLE.SIZE, "(?<=[a-z]),", ";"),
+        REPLICATION.SAMPLE.SIZE = str_remove_all(REPLICATION.SAMPLE.SIZE, ","),
+        rep_cases               = str_extract(REPLICATION.SAMPLE.SIZE, "[0-9]+(?=.*cases)"),
+        rep_controls            = str_extract(REPLICATION.SAMPLE.SIZE, "(?<=; )[0-9]+(?=.*controls)"),
+    ) %>%
+    mutate( # Clean and extract statistical test data
+        X95..CI..TEXT. = str_replace(X95..CI..TEXT., "\\(", "\\["),
+        X95..CI..TEXT. = str_replace(X95..CI..TEXT., "\\)", "\\]"),
+        lower_ci       = if_else(
+            str_detect(X95..CI..TEXT.,"NR"), 
+            "NR", 
+            str_extract(X95..CI..TEXT., '(?<=\\[)[0-9.]+')),
+        upper_ci       = if_else(
+            str_detect(X95..CI..TEXT.,"NR"), 
+            "NR",
+            str_extract(X95..CI..TEXT., '(?<=-)[0-9.]+(?=\\])')
+        )
     ) %>% 
-    select(INITIAL.SAMPLE.SIZE, cases, controls) %>% 
-    filter(
-        is.na(controls)    
-    )
-        str_detect(INITIAL.SAMPLE.SIZE, "affected"))
-# str_extract_all(t, "[0-9,]+(?=.*cases)")
-
+    # select(REPLICATION.SAMPLE.SIZE, rep_cases, rep_controls) %>%
+    # filter(is.na(rep_cases) | is.na(rep_controls))
+    select(
+        PUBMEDID, STUDY, SNPS, 
+        DISEASE.TRAIT, MAPPED_TRAIT, #cancer_class,
+        INITIAL.SAMPLE.SIZE, init_cases, init_controls, 
+        replicated, REPLICATION.SAMPLE.SIZE, rep_cases, rep_controls, 
+        P.VALUE, OR.or.BETA, X95..CI..TEXT., lower_ci, upper_ci
+    ) 
 ```
+
+```{r}
+classified_gwas_cancers %>% colnames()
+```
+
+```{r}
+classified_gwas_cancers %>% head()
+```
+
 

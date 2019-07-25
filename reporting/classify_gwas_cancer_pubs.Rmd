@@ -10,6 +10,7 @@ library(gwascat)
 library(dplyr)
 library(stringr)
 library(ggplot2)
+library(xml2)
 
 # Define project directories
 projroot <- rprojroot::find_rstudio_root_file()
@@ -524,12 +525,7 @@ gwas_classified <- selected %>%
 gathered <- gwas_classified %>% 
     tidyr::gather(cancer_class, tf, biliary:cancer_unspecified) %>% 
     filter(tf==1) %>% 
-    dplyr::select(-c(tf, traits, start:strand))
-```
-
-```{r}
-gathered %>% 
+    dplyr::select(-c(tf, traits, start:strand)) %>% 
     arrange(cancer_class) %>% 
     write_csv(file.path(projroot, "data/gwas_cancer_classifications.csv"))
 ```
-
