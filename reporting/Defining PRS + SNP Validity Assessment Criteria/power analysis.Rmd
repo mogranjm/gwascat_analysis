@@ -6,16 +6,19 @@ output: html_notebook
 library(dplyr)
 library(stringr)
 
-api_key <- "d96bb10ffdca4cfb6ad3c963ba2e9f155d09"
-
-projdir <- rprojroot::find_rstudio_root_file()
-datadir <- file.path(projdir, "data")
-
-classified_gwas_cancers <- readr::read_csv(file.path(datadir, "gwas_cancer_classifications.csv"))
+if(!exists("gwas_classified")){
+    gwas_classified <- readr::read_csv("../../data/gwas_cancer_classifications.csv")
+}
 ```
 
+```{r to refresh publication dataset, echo=FALSE, include=FALSE, eval=FALSE}
+# source(file.path(rprojroot::find_rstudio_root_file(), "reporting", "classify_gwas_cancer_pubs.R"))
+# source(file.path(reportdir, "get_pub_data.R"))
+```
+
+
 ```{r}
-classified_gwas_cancers %>% 
+gwas_classified <- gwas_classified %>% 
     filter( # Restrict analysis to breast cancer, not including studies assessing receptor status
         cancer_class == "breast",
         !str_detect(DISEASE.TRAIT, "status")
@@ -55,16 +58,17 @@ classified_gwas_cancers %>%
         DISEASE.TRAIT, MAPPED_TRAIT, #cancer_class,
         INITIAL.SAMPLE.SIZE, init_cases, init_controls, 
         replicated, REPLICATION.SAMPLE.SIZE, rep_cases, rep_controls, 
-        P.VALUE, OR.or.BETA, X95..CI..TEXT., lower_ci, upper_ci
-    ) 
+        P.VALUE, OR.or.BETA, X95..CI..TEXT., lower_ci, upper_ci,
+        abstract, doi
+    )
 ```
 
 ```{r}
-classified_gwas_cancers %>% colnames()
+gwas_classified %>% colnames()
 ```
 
 ```{r}
-classified_gwas_cancers %>% head()
+gwas_classified %>% head()
 ```
 
 

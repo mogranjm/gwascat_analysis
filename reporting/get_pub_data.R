@@ -8,15 +8,16 @@ funcdir <- file.path(projroot, "functions")
 datadir <- file.path(projroot, "data")
 
 # Read cancer data
-gwas_cancer_data <- file.path(datadir, "gwas_cancer_classifications.csv") %>%
-    read_csv()
+if(!exists("gwas_classified")){
+    gwas_classified <- read_csv(file.path(datadir, "gwas_cancer_classifications.csv"))
+}
 
 # Get custom NCBI EUtil API functions
 api_key <- "d96bb10ffdca4cfb6ad3c963ba2e9f155d09"
 source(file.path(funcdir, "ncbi_eutil_functions.R"))
 
 # Extract PUBMEDIDs for each paper to query NCBI
-ids <- gwas_cancer_data %>%
+ids <- gwas_classified %>%
     distinct(PUBMEDID)
 
 id_str <- ids %>%
@@ -38,6 +39,14 @@ ids$abstract <- xml %>%
     trimws()
 
 # Return extracted publication data to the original dataset and write to file.
-gwas_cancer_data <- gwas_cancer_data %>%
+gwas_classified <- gwas_classified %>%
     left_join(ids) %>%
     write_csv(file.path(projroot, "data/gwas_cancer_classifications.csv"))
+
+rm(api_key)
+rm(ids)
+rm(id_str)
+rm(url)
+rm(xml)
+rm(eutil_fetch_url_generator)
+rm(eutil_link_url_generator)
