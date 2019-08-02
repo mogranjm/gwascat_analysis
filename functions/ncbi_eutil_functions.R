@@ -52,7 +52,7 @@ eutil_fetch_url_generator <- function(db, ids, rettype = NULL, retmode = NULL, a
 }
 
 
-eutil_link_url_generator <- function(eutil, dbfrom, db, ids){
+eutil_link_url_generator <- function(dbfrom, db, ids){
 	# URL Generator for the NCBI entrez programming utility API
 
 	# Args:
