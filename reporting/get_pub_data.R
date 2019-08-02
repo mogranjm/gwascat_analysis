@@ -18,16 +18,21 @@ source(file.path(funcdir, "ncbi_eutil_functions.R"))
 
 # Extract PUBMEDIDs for each paper to query NCBI
 ids <- gwas_classified %>%
-    distinct(PUBMEDID)
+    distinct(PUBMEDID) %>% arrange(PUBMEDID)
 
 id_str <- ids %>%
     pull() %>%
     paste(collapse = ",")
 
-# Construct query URL using NCBI EUtil API and query pubmed for publication data
-url <- eutil_fetch_url_generator("pubmed", id_str, rettype = "xml", api_key = api_key)
+    # Construct query URL using NCBI EUtil API and query pubmed for PMC ids using PMIDs
+    # link_url <- eutil_link_url_generator(dbfrom = "pubmed", db = "pmc", ids = id_str)
+    #
+    # id_xml <- read_xml(link_url)
 
-xml <- read_xml(url)
+# Construct query URL using NCBI EUtil API and query pubmed for publication data
+fetch_url <- eutil_fetch_url_generator("pubmed", id_str, rettype = "xml", api_key = api_key)
+
+xml <- read_xml(fetch_url)
 
 # Extract DOI and Abstract text from query result
 ids$doi <- xml_find_all(xml, '//ArticleId')[xml_attr(xml_find_all(xml, '//ArticleId'), "IdType")=="doi"] %>%
@@ -46,7 +51,7 @@ gwas_classified <- gwas_classified %>%
 rm(api_key)
 rm(ids)
 rm(id_str)
-rm(url)
+rm(fetch_url)
 rm(xml)
 rm(eutil_fetch_url_generator)
 rm(eutil_link_url_generator)

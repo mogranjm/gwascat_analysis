@@ -1,0 +1,100 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup}
+library(dplyr)
+library(stringr)
+library(janitor)
+library(tidyr)
+
+if(!exists("gwas_classified")){
+    gwas_classified <- readr::read_csv("../../data/gwas_cancer_classifications.csv")
+}
+```
+
+```{r to refresh publication dataset, echo=FALSE, include=FALSE, eval=FALSE}
+source(file.path(rprojroot::find_rstudio_root_file(), "reporting", "classify_gwas_cancer_pubs.R"))
+source(file.path(reportdir, "get_pub_data.R"))
+```
+
+
+```{r}
+gwas_classified %>% 
+    count(SNPS, cancer_class) %>% # count number of times a SNP has a recorded association with a given cancer
+    get_dupes(SNPS) %>% 
+    arrange(dupe_count, SNPS, desc(n)) #%>% 
+    # count(SNPS, cancer_class)
+
+# Be careful with anything SNP that has as a cancer_multiple_or_unspecified record, these are mostly duplicate entries
+```
+
+```{r}
+breast_pubs %>% 
+    count(gw_sig, gw_borderline, replicated) %>% 
+    filter(
+        gw_sig == TRUE 
+        | gw_borderline == TRUE
+        )
+```
+
+```{r}
+# SNPs reaching GW significance AND reported by more than one study
+sig_rep_snps <- breast_pubs %>% 
+    filter(
+        gw_sig==TRUE |gw_borderline==TRUE
+        ) %>% 
+    count(SNPS) %>% 
+    filter(n>1)
+```
+
+```{r}
+breast_pubs %>% 
+    filter(SNPS %in% sig_rep_snps$SNPS) %>% 
+    distinct(PUBMEDID) %>% 
+    mutate(
+        pm_url = file.path("https://www.ncbi.nlm.nih.gov/pubmed", PUBMEDID)
+    )
+```
+```{r}
+    # Construct query URL using NCBI EUtil API and query pubmed for PMC ids using PMIDs
+source(file.path(rprojroot::find_rstudio_root_file(), "functions", "ncbi_eutil_functions.R"))
+
+id_str <- breast_pubs %>% 
+    filter(SNPS %in% sig_rep_snps$SNPS) %>% 
+    distinct(PUBMEDID) %>% 
+    pull() %>% paste(collapse = ",")
+    
+link_url <- eutil_link_url_generator(dbfrom = "pubmed", db = "pmc", ids = id_str)
+
+id_xml <- read_xml(link_url)
+```
+
+
+```{r}
+breast_pubs %>% 
+    count(SNPS) %>% 
+    filter(n>1) %>% 
+    count(n)
+```
+
+
+```{r}
+breast_pubs %>% 
+    count(SNPS) %>% 
+    filter(n>1) %>%     
+    nrow()
+```
+
+
+
+```{r}
+breast_pubs %>% 
+    distinct(PUBMEDID)
+```
+
+```{r}
+gwas_classified %>% head()
+```
+
+
