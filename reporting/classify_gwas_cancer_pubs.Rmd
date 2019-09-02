@@ -12,6 +12,10 @@ library(stringr)
 library(ggplot2)
 library(xml2)
 
+library(ggplot2)
+library(viridis)
+library(scales)
+
 # Define project directories
 projroot <- rprojroot::find_rstudio_root_file()
 funcdir <- file.path(projroot, "functions")
@@ -23,7 +27,7 @@ source(file.path(funcdir, "refresh_gwas_dataset.R"), chdir = TRUE)
 
 # GWAS Catalog Dataset
 ```{r}
-gwas_data
+gwas_data %>% head()
 ```
 
 ## Structure
@@ -37,8 +41,8 @@ Each record contains information about the SNP of interest:
     + First Author,
     + Journal me,
     + NCBI Link,
-* Details of the condition it is associated with 
-     + DISEASETRAIT, 
+* Details of the condition with which it is associated
+    + DISEASETRAIT, 
     + Risk allele, [SNP_ ID]-[Risk_Associated_Nucleotide]
     + Associated Risk (Odds Ratio or Beta coefficient, including p-value & 95% CI)
     + Sample Size, etc...
@@ -88,6 +92,7 @@ extract_cancer_data(gwas_data)
 exclude <- c(
     "body mass index",
     "cholangitis",
+    "insulinoma",
     "pancreatitis",
     "smoking",
     "smoker",
@@ -124,7 +129,7 @@ exclude <- c(
     "vincristine",
     "methotrexate",
     "kinetics",
-    # "childhood", # excludes SNPs predicting ALL in childhood, no other conflicts
+    "childhood", # excludes SNPs predicting ALL in childhood, no other conflicts
     "free",
     "recurrence",
     "survival",
@@ -139,8 +144,10 @@ exclude <- c(
 ) %>% 
     paste(collapse="|")
 
-cancer_classes <- gwas_cancer_data %>%
-	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>% 
+# cancer_classes <- 
+gwas_cancer_data %>% 
+	dplyr::select(PUBMEDID, DISEASE.TRAIT) %>%
+	# dplyr::select(PUBMEDID, DISEASE.TRAIT, MAPPED_TRAIT)# %>%
 	mutate(
 	    traits =             tolower(DISEASE.TRAIT)# all lowercase,
 	    ) %>% 
@@ -178,7 +185,7 @@ cancer_classes <- gwas_cancer_data %>%
 	    cancer_multiple_or_unspecified = if_else(total>1, TRUE, cancer_multiple_or_unspecified)
     ) %>% 
     mutate( # Exclude anything marked as being associated with multiple or unspecified cancer type as not being associated with a specific type
-        biliary =            if_else(cancer_multiple_or_unspecified == TRUE, FALSE, biliary),s
+        biliary =            if_else(cancer_multiple_or_unspecified == TRUE, FALSE, biliary),
 	    bladder =            if_else(cancer_multiple_or_unspecified == TRUE, FALSE, bladder),
 	    cns =                if_else(cancer_multiple_or_unspecified == TRUE, FALSE, cns),
 	    breast =             if_else(cancer_multiple_or_unspecified == TRUE, FALSE, breast),
@@ -207,15 +214,31 @@ cancer_classes <- gwas_cancer_data %>%
 ```
 
 ```{r}
-cancer_classes %>%
+gwas_cancer_data %>% 
+	# dplyr::select(PUBMEDID, DISEASE.TRAIT) %>% 
+	dplyr::select(
+	    # PUBMEDID, 
+	    DISEASE.TRAIT, 
+	    MAPPED_TRAIT
+	) %>%
+    # count(
+    #     # PUBMEDID, 
+    #     MAPPED_TRAIT
+    # ) %>% arrange(MAPPED_TRAIT) %>% 
     filter(
-        str_detect(traits, "breast"),
-        str_detect(traits, "colorectal"),    
-        cancer_multiple_or_unspecified == TRUE
+    # count(
+        !str_detect(MAPPED_TRAIT, "response to"),
+        !str_detect(MAPPED_TRAIT, "mortality"),
+        !str_detect(MAPPED_TRAIT, "metastasis"),
+        !str_detect(MAPPED_TRAIT, "survival"),
+        !str_detect(MAPPED_TRAIT, "benign"),
+        # str_detect(MAPPED_TRAIT, "")
     )
-    # select(DISEASE.TRAIT)
-
 ```
+```{r}
+gwas_cancer_data %>% filter(str_detect(MAPPED_TRAIT, "smoking status measurement"))
+```
+
 
 ```{r}
 # Check whether any publications are not classified
@@ -247,7 +270,7 @@ cancer_classes %>%
         thyroid == FALSE,
         testicular == FALSE,
         cancer_multiple_or_unspecified == FALSE,
-    ) %>% distinct(DISEASE.TRAIT)
+    ) %>% distinct(PUBMEDID, DISEASE.TRAIT)
 
 ```
 
@@ -617,6 +640,219 @@ gwas_classified <- gwas_classified %>%
     tidyr::gather(cancer_class, tf, biliary:cancer_multiple_or_unspecified) %>% 
     filter(tf==1) %>% 
     dplyr::select(-c(tf, traits, start:strand)) %>% 
-    arrange(cancer_class) #%>% 
+    arrange(cancer_class) %>% 
     write_csv(file.path(projroot, "data/gwas_cancer_classifications.csv"))
+```
+
+```{r}
+plot_data <- gwas_classified %>% 
+    distinct(SNPS, cancer_class) %>% 
+    count(cancer_class) %>% 
+    mutate(
+        cancer_class = case_when(
+            cancer_class == "cancer_multiple_or_unspecified" ~ "Multiple Cancers",
+            cancer_class == "head_neck" ~ "Head/Neck",
+            cancer_class == "skin_non_melanoma" ~ "Skin",
+            cancer_class == "multiple_myeloma" ~ "Multiple Myeloma",
+            TRUE ~ cancer_class
+        ),
+        `Cancer Class` = str_to_title(cancer_class),
+        `Cancer Class` = str_replace(`Cancer Class`, "Cns", "CNS"),
+    ) %>% 
+    dplyr::rename("Distinct SNPs" = n) %>%
+    mutate(
+        strat = case_when(
+            `Distinct SNPs` > 250              ~ "250+",
+            between(`Distinct SNPs`, 101, 250) ~ "101-250",
+            between(`Distinct SNPs`,  51, 100) ~ "51-100",
+            `Distinct SNPs` <= 50               ~ "0-50",
+            ) %>% factor(levels = c("0-50", "51-100", "101-250", "250+"))
+    )
+```
+
+```{r}
+plot_data %>% 
+    count(strat)
+```
+```{r, fig.width=20, fig.height=12}
+plot_data %>% 
+    filter(strat == "0-50") %>% 
+    ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+    theme_minimal() +
+    geom_bar(stat = "identity") + 
+    geom_text(aes(label = `Cancer Class`), vjust=1.6, color="white", size=10) + 
+        theme(
+            axis.text.x  = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(angle = 45, vjust=0.5),
+            legend.position = "none"
+            ) +
+        scale_x_discrete(name = "", breaks = NULL) +
+        scale_y_continuous(limits = c(0,50), breaks = NULL,oob = rescale_none , name = "") +
+        scale_fill_viridis(discrete = T, option = "plasma")
+
+ggsave("images/lt_50_overlay.png", width = 20, height = 4, bg = "transparent")
+```
+
+```{r, fig.width=20, fig.height=8}
+plot_data %>% 
+    filter(strat == "51-100") %>% 
+    ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+    theme_minimal() +
+    geom_bar(stat = "identity") + 
+    geom_text(aes(label = `Cancer Class`), vjust=1.6, color="white", size=10) + 
+        theme(
+            axis.text.x  = element_blank(),
+            axis.title.x = element_blank(),
+            axis.title.y = element_text(),
+            rect = element_rect(fill = "transparent"),
+            legend.position = "none"
+            ) +
+        scale_x_discrete(name = "", breaks = NULL) +
+        scale_y_continuous(limits = c(0,100), breaks = NULL, oob = rescale_none , name = "") +
+        scale_fill_viridis(discrete = T, direction = -1)
+
+ggsave("images/lt_100_midlay.png", width = 20, height = 8, bg = "transparent")
+```
+
+```{r, fig.width=20, fig.height=12}
+plot_data %>%
+    filter(strat == "101-250") %>%
+    ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+    theme_minimal() +
+    geom_bar(stat = "identity") +
+    geom_text(aes(label = `Cancer Class`), vjust=1.6, color="white", size=10) +
+
+        theme(
+            axis.text.x = element_blank(),
+            axis.title.y = element_text(angle = 45, vjust = 0.5),
+            rect = element_rect(fill = "transparent"),
+            legend.position = "none"
+            ) +
+        scale_x_discrete(name = "", breaks = NULL) +
+        scale_y_continuous(limits = c(0, 250), breaks = NULL, oob = rescale_none, name = "") +
+        scale_fill_viridis(discrete = T)
+
+ggsave("images/lt_250_underlay.png", width = 20, height = 12, bg="transparent")
+```
+
+```{r, fig.width=20, fig.height=12}
+plot_data %>% 
+    dplyr::filter(strat == "250+") %>% arrange(desc(cancer_class)) %>% 
+    ggplot(mapping = aes(x = dplyr::desc(`Cancer Class`), y=`Distinct SNPs`, fill = `Cancer Class`)) +
+    # ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+    theme_minimal(base_size=22) +
+    geom_bar(stat = "identity") + 
+    geom_text(aes(label = `Cancer Class`), vjust=1.6, color="white", size=10) + 
+        theme(
+            axis.text.x  = element_blank(), 
+            axis.title.x = element_blank(), 
+            # axis.text = element_text(size = 10),
+            # axis.ticks.x = element_blank(),
+            # axis.title.y = element_text(),
+            rect = element_rect(fill = "transparent"),
+            legend.position = "none",
+            legend.text = element_blank()
+            ) +
+        scale_x_discrete(name = "", breaks=NULL) +
+        scale_y_continuous(name = "Distinct SNPs", limits = c(40,875), breaks = c(seq(0,45,5), seq(50,90,10),seq(100,900,50)), oob = rescale_none, position = "right") +
+        scale_fill_viridis(discrete=T, option = "plasma") #+
+    # ylab("Distinct SNPs")
+
+ggsave("images/gt_250_sidelay.png", width = 20, height = 43.2, bg = "transparent")
+```
+
+
+
+```{r, fig.width=20, fig.height=12}
+# plot_data %>% 
+#     filter(strat == "0-50") %>% 
+#     ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+#     theme_minimal() +
+#         geom_bar(stat = "identity") + 
+#         theme(
+#             # axis.text.x = element_text(angle = -30),
+#             axis.title.y = element_text(angle = 45, vjust=0.5),
+#             legend.position = "none"
+#             ) +
+#         scale_y_continuous(limits = c(2,50), breaks = seq(0,900,5),oob = rescale_none , name = "") +
+#         scale_fill_viridis(discrete = T)
+# 
+# ggsave("images/lt_50.png", width = 20, height = 4)
+```
+
+```{r, fig.width=20, fig.height=12}
+# lt_100 <- plot_data %>% 
+#     filter(strat == "51-100") %>% 
+#     ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+#     theme_minimal() +
+#         geom_bar(stat = "identity") + 
+#         theme(
+#             #axis.text.x  = element_text(angle = -30),
+#             axis.title.y = element_text(),
+#             axis.title.x = element_blank(),
+#             rect = element_rect(fill = "transparent"),
+#             legend.position = "none"
+#             ) +
+#         scale_x_discrete(name = "") +
+#         scale_fill_viridis(option="plasma", discrete = T)
+# 
+# lt_100 + 
+#     scale_y_continuous(limits = c(50,100), breaks = seq(0,900,10), oob = rescale_none)
+# ggsave("images/lt_100.png", width = 20, height = 4, bg = "transparent")
+# 
+# 
+# lt_100 +
+#     scale_y_continuous(limits = c(0,100), breaks = seq(0,100,10), oob = rescale_none)
+# ggsave("images/lt_100_underlay.png", width = 20, height = 8, bg = "transparent")
+```
+
+```{r, fig.width=20, fig.height=12}
+# lt_250 <- plot_data %>% 
+#     # filter(strat %in% c("0-50", "51-100", "101-250")) %>% 
+#     filter(strat == "101-250") %>%
+#     ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+#     theme_minimal() +
+#         geom_bar(stat = "identity") + 
+#         theme(
+#             # axis.text.x = element_text(angle = -30),
+#             axis.title.y = element_text(angle = 45, vjust = 0.5),
+#             rect = element_rect(fill = "transparent"),
+#             legend.position = "none"
+#             ) +
+#         scale_x_discrete(name = "") +
+#         scale_fill_viridis(discrete = T)
+# 
+# lt_250 +        
+#     scale_y_continuous(limits = c(100, 250), breaks = seq(0,900,50), oob = rescale_none, name = "")
+# ggsave("images/lt_250.png", width = 20, height = 4, bg = "transparent")
+# 
+# lt_250 +
+#     scale_y_continuous(limits = c(10, 250), breaks = seq(0,900,50), oob = rescale_none, name = "")
+# ggsave("images/lt_250_underlay.png", width = 20, height = 12, bg = "transparent")
+```
+
+```{r, fig.width=10, fig.height=12}
+# gt_250 <- plot_data %>% 
+#     filter(strat == "250+") %>% 
+#     ggplot(mapping = aes(x = `Cancer Class`, y=`Distinct SNPs`, fill = `Cancer Class`)) +
+#     theme_minimal() +
+#     geom_bar(stat = "identity") + 
+#     geom_text(aes(label = `Cancer Class`), vjust=1.6, color="white", size=5) + 
+#         theme(
+#             axis.text.x = element_blank(), 
+#             axis.title.y = element_blank(),
+#             rect = element_rect(fill = "transparent"),
+#             legend.position = "none",
+#             legend.text = element_blank()
+#             ) +
+#         scale_fill_viridis(option="plasma", discrete=T)
+# 
+# gt_250 +
+#     scale_y_continuous(position = "right", limits = c(250,875), breaks = seq(0,900,50), oob = rescale_none) +
+# ggsave("images/gt_250.png", width = 10, height = 12, bg = "transparent")
+# 
+# gt_250 +
+#     scale_y_continuous(position = "right", limits = c(40,875), breaks = seq(0,900,50), oob = rescale_none) +
+# ggsave("images/gt_250_underlay.png", width = 10, height = 12, bg = "transparent")
 ```

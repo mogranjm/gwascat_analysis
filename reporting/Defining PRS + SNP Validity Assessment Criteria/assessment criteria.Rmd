@@ -1,0 +1,377 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+```{r setup}
+# library(WebPower)
+library(stringr)
+library(rvest)
+library(ggplot2)
+library(reshape2)
+library(dplyr)
+
+reportdir <- file.path(rprojroot::find_rstudio_root_file(), "reporting")
+reportdir <- file.path(rprojroot::find_rstudio_root_file(), "functions")
+
+if(!exists("gwas_classified")){
+    gwas_classified <- readr::read_csv("../../data/gwas_cancer_classifications.csv")
+}
+```
+
+```{r to refresh publication dataset, echo=FALSE, include=FALSE, eval=FALSE}
+source(file.path(rprojroot::find_rstudio_root_file(), "reporting", "classify_gwas_cancer_pubs.R"))
+source(file.path(reportdir, "get_pub_data.R"))
+```
+
+
+```{r to refresh publication dataset, echo=FALSE, include=FALSE}
+source(file.path(funcdir, "wp_logistic_custom.R"))
+```
+
+```{r Identify externally replicated SNPs}
+# Identify externally replicated SNPs (SNPs reported in >1 publication)
+pubs <- gwas_classified %>%
+    count(cancer_class, SNPS) %>% 
+    dplyr::rename(SNP_freq_in_gwascat = n) %>% 
+    left_join(gwas_classified, by = "SNPS") %>%  
+    mutate(externally_replicated = SNP_freq_in_gwascat>1) %>% #filter(externally_replicated == T) %>% distinct(cancer_class = cancer_class.x, SNPS)
+    dplyr::select(-`cancer_class.y`) %>% 
+    dplyr::rename(cancer_class = cancer_class.x)
+```
+
+```{r Extract Breast cancers and prepare dataset for analysis}
+# Define significance thresholds for "Definitely significant" vs. "Borderline significant"
+sig <- 5 * 10^-8
+# min_sig <- 1 * 10^-7
+# coi <- "breast"
+
+pubs <- pubs %>%
+    dplyr::filter( # Restrict analysis to cancer of interest, not including studies assessing receptor status and only those records reporting effect and sample sizes
+        # cancer_class == coi,
+        !str_detect(DISEASE.TRAIT, "status"),
+        !is.na(OR.or.BETA),
+        ) %>%
+    mutate( # Clean and extract sample sizes (case/control) from initial test set
+        INITIAL.SAMPLE.SIZE = tolower(INITIAL.SAMPLE.SIZE),
+        INITIAL.SAMPLE.SIZE = str_remove_all(INITIAL.SAMPLE.SIZE, "up to "),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, " affected", "cases"),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, " unaffected", "controls"),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, " and", ";"),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, "cases ", "cases; "),
+        INITIAL.SAMPLE.SIZE = str_replace_all(INITIAL.SAMPLE.SIZE, "(?<=[a-z]),", ";"),
+        INITIAL.SAMPLE.SIZE = str_remove_all(INITIAL.SAMPLE.SIZE, "[,|\\*]"),
+        INITIAL.SAMPLE.SIZE = str_replace(INITIAL.SAMPLE.SIZE, ";(?=[0-9])", "; "),
+        init_cases          = str_extract(INITIAL.SAMPLE.SIZE, "[0-9]+(?=.*cases)") %>% as.numeric(),
+        init_controls       = str_extract(INITIAL.SAMPLE.SIZE, "(?<=; )[0-9]+(?=.*control)") %>% as.numeric(),
+        init_sample         = `+`(init_cases, init_controls),
+        risk_allele         = str_extract(STRONGEST.SNP.RISK.ALLELE, "[A-Z?]+")
+    # ) %>% 
+    # filter(
+    #     !is.na(init_sample)
+    ) %>% 
+    mutate( # Clean and extract sample sizes (case/control) from replication set
+        internally_replicated   = !is.na(REPLICATION.SAMPLE.SIZE),
+        REPLICATION.SAMPLE.SIZE = str_replace_all(REPLICATION.SAMPLE.SIZE, "(?<=[a-z]),", ";"),
+        REPLICATION.SAMPLE.SIZE = str_remove_all(REPLICATION.SAMPLE.SIZE, ","),
+        rep_cases               = str_extract(REPLICATION.SAMPLE.SIZE, "[0-9]+(?=.*cases)") %>% as.numeric(),
+        rep_controls            = str_extract(REPLICATION.SAMPLE.SIZE, "(?<=; )[0-9]+(?=.*controls)") %>% as.numeric(),
+        rep_sample              = `+`(rep_cases, rep_controls),
+    ) %>%
+    mutate( # Clean and extract statistical test results, mark reported beta coefficients as decreasing or increasing
+        X95..CI..TEXT. = str_replace(X95..CI..TEXT., "\\(", "\\["),
+        X95..CI..TEXT. = str_replace(X95..CI..TEXT., "\\)", "\\]"),
+        X95..CI..TEXT. = str_replace(X95..CI..TEXT., "\\*\\*\\*", "-"),
+        X95..CI..TEXT. = str_replace_all(X95..CI..TEXT., " ", "-"),
+        X95..CI..TEXT. = if_else(!str_detect(X95..CI..TEXT., "^\\["), paste0("[", X95..CI..TEXT., "]"), X95..CI..TEXT.),
+        X95..CI..TEXT. = if_else(!str_detect(X95..CI..TEXT., "[1.16.1.34]"), "[1.16-1.34]", X95..CI..TEXT.),
+        X95..CI..TEXT. = if_else(!str_detect(X95..CI..TEXT., "[unit increase]"), "[NR]", X95..CI..TEXT.),
+        OR = case_when(
+            str_detect(X95..CI..TEXT., "crease") ~ exp(OR.or.BETA), 
+            is.na(X95..CI..TEXT.) ~ OR.or.BETA,
+            TRUE ~ OR.or.BETA
+            ),
+        beta_direction = case_when(
+            str_detect(OR.or.BETA, "^1.") ~ "(OR reported)",
+            str_detect(X95..CI..TEXT., "increase") ~ "increase",
+            str_detect(X95..CI..TEXT., "decrease") ~ "decrease",
+        ),
+        # OR.or.BETA = case_when( # Mark decreasing coefficients 
+        #     str_detect(X95..CI..TEXT., "decrease") ~ -OR.or.BETA,
+        # ),
+        lower_ci       = case_when(
+            # is.na(X95..CI..TEXT.) | 
+            # str_detect(X95..CI..TEXT., "NR") ~ NA,
+            TRUE ~ str_extract(X95..CI..TEXT., '(?<=\\[)[0-9.]+') 
+        ),
+        upper_ci       = case_when(    
+            # is.na(X95..CI..TEXT.) | 
+            # str_detect(X95..CI..TEXT., "NR") ~ NA,
+            TRUE ~ str_extract(X95..CI..TEXT., '(?<=-)[0-9.]+(?=\\])')
+        )
+    ) %>% 
+    mutate( # Genome wide significance
+        gw_sig = P.VALUE <= (sig),
+        # gw_borderline = P.VALUE > (sig) & P.VALUE <= (min_sig),
+        lower_ci = as.numeric(lower_ci),
+        upper_ci = as.numeric(upper_ci),
+        ci_span = `-`(upper_ci, lower_ci),
+        lower_ci_OR = case_when(
+            # is.na(X95..CI..TEXT.) ~ 0,
+            str_detect(X95..CI..TEXT., "crease") ~ exp(lower_ci),
+            TRUE ~ lower_ci
+        ),
+        upper_ci_OR = case_when(
+            # is.na(X95..CI..TEXT.) ~ 0,
+            str_detect(X95..CI..TEXT., "crease") ~ exp(upper_ci),
+            TRUE ~ upper_ci
+        ),
+        ci_OR_span = `-`(upper_ci_OR, lower_ci_OR),
+    ) %>% #filter(!is.na(init_sample)) %>% 
+    mutate( # Power
+        prop_cases    = `/`(init_cases, init_sample),
+        # prop_controls = `/`(init_controls, init_sample),
+        pDgE = OR/(1+OR), # p( D| E) 
+        pCgE = 1-pDgE,    # p(!D| E)
+        pDgN = 1-pDgE,    # p( D|!E)
+        pCgN = 1-pCgE,    # p(!D|!E)
+        nDgE = pDgE * init_cases,     # n(Exposed Cases)
+        nCgE = pCgE * init_controls,  # n(Exposed Controls)
+        nDgN = pDgN * init_cases,     # n(Unexposed Cases)
+        nCgN = pCgN * init_controls,  # n(Unexposed Controls)
+        wp_gws = if_else(  # Power to detect given OR (beta coef) at genome wide significance
+            (!is.na(pDgN) | !is.na(init_sample)), 
+            wp_logistic_custom(
+                n = init_sample, 
+                p0 = pDgN, 
+                p1 = pDgE, 
+                alpha = sig, 
+                alternative = "greater", 
+                family = "Bernoulli", 
+                parameter = log(OR)
+            )$power,
+            0
+        ), #%>% format(scientific = F, digits = 3),
+        wp_gws = if_else(
+            is.na(wp_gws), 0, wp_gws
+        ), 
+        wp.p   = if_else(
+            wp_gws>0.8, TRUE, FALSE# Does power exceed 80%?
+        ),
+    ) %>%
+    dplyr::select(
+        cancer_class,
+        PUBMEDID, STUDY, SNPS, 
+        risk_allele, RISK.ALLELE.FREQUENCY, MERGED,
+        DISEASE.TRAIT, MAPPED_TRAIT, #cancer_class,
+        INITIAL.SAMPLE.SIZE, init_cases, init_controls, init_sample, 
+        internally_replicated, REPLICATION.SAMPLE.SIZE, rep_cases, rep_controls, externally_replicated,
+        gw_sig, wp.p, wp_gws, #gw_borderline, 
+        PVALUE_MLOG, P.VALUE,OR, OR.or.BETA, beta_direction, X95..CI..TEXT., lower_ci, lower_ci_OR, upper_ci, upper_ci_OR, ci_span, ci_OR_span
+    )
+```
+
+```{r}
+pubmed_search <- readr::read_csv(file.path(datadir, "pubmed_result.csv"))
+
+pm_prs <- pubmed_search %>% 
+    rename("cancer_class" = X2) %>% 
+    mutate(
+        cancer_class = case_when(
+            cancer_class == "Head/Neck" ~ "head_neck",
+            cancer_class == "Skin (Non-Melanoma)" ~ "skin_non_melanoma",
+            TRUE ~ tolower(cancer_class)
+        )
+    ) %>%
+    group_by(cancer_class) %>% 
+    summarise(
+        `PRS Publications` = n()
+    ) %>% ungroup() %>% 
+    mutate(
+        `PRS Publications` = `PRS Publications`/max(`PRS Publications`)
+)
+```
+
+
+```{r , fig.width= 30, fig.height=20}
+grps <- pubs %>%
+    distinct(PUBMEDID, DISEASE.TRAIT, SNPS, .keep_all = T) %>% 
+    # mutate(
+    #     wp_gws = case_when(
+    #         is.nan(wp_gws) ~ 0,
+    #         TRUE ~ wp_gws
+    #     )
+    # ) %>%
+    group_by(cancer_class) %>% 
+    summarise(
+        samp = sum(init_sample),
+        log_samp = log(samp),
+        # snps = n_distinct(SNPS),
+        n_snps = n(),
+        Power = mean(wp_gws),
+        conf = mean(ci_OR_span, na.rm = T)/max(ci_OR_span, na.rm = T),
+    ) %>% 
+    mutate(
+        # Samples = samp/max(samp),
+        # `Distinct SNPs` = snps/max(snps),
+        `Total SNPs` = n_snps/max(n_snps),
+        Confidence   = if_else(is.na(conf), 0, conf),
+        # Significance = if_else(is.na(sig), 0, sig)
+    ) %>% full_join(pm_prs) #%>%
+
+
+ext_reps <- pubs %>%
+    dplyr::filter(externally_replicated==T) %>% 
+    count(
+        cancer_class, SNPS, gw_sig, #externally_replicated,
+    ) %>% 
+    tidyr::spread(gw_sig, n) %>% 
+    rename(rep_nsig = `FALSE`, rep_sig = `TRUE`) %>%
+    mutate(
+        rep_sig       = if_else(is.na(rep_sig), 0L, rep_sig),
+        rep_nsig      = if_else(is.na(rep_nsig), 0L, rep_nsig),
+        prop_reps_sig = `/`(rep_sig, `+`(rep_sig, rep_nsig))
+    ) %>% 
+    left_join(pubs, by=c("cancer_class", "SNPS")) %>%
+    mutate(
+        prop_reps_sig = if_else(externally_replicated == F, 0,  prop_reps_sig),
+        rep_nsig      = if_else(externally_replicated == F, 0L, rep_nsig),
+        rep_sig       = if_else(externally_replicated == F, 0L, rep_sig),
+    ) %>%
+    group_by(cancer_class) %>%
+    summarise(
+        `Valid Replications (%)\n(External)` = sum(prop_reps_sig)/n()
+    )
+
+int_reps <- pubs %>%
+    filter(internally_replicated==T) %>% 
+    count(
+        cancer_class, SNPS, gw_sig, #externally_replicated,
+    ) %>% 
+    tidyr::spread(gw_sig, n) %>% 
+    rename(rep_nsig = `FALSE`, rep_sig = `TRUE`) %>%
+    mutate(
+        rep_sig       = if_else(is.na(rep_sig), 0L, rep_sig),
+        rep_nsig      = if_else(is.na(rep_nsig), 0L, rep_nsig),
+        prop_reps_sig = `/`(rep_sig, `+`(rep_sig, rep_nsig))
+    ) %>% 
+    left_join(pubs, by=c("cancer_class", "SNPS")) %>%
+    mutate(
+        prop_reps_sig = if_else(internally_replicated == F, 0,  prop_reps_sig),
+        rep_nsig      = if_else(internally_replicated == F, 0L, rep_nsig),
+        rep_sig       = if_else(internally_replicated == F, 0L, rep_sig),
+    ) %>%
+    group_by(cancer_class) %>%
+    summarise(
+        `Valid Replications (%)\n(Internal)` = sum(prop_reps_sig)/n()
+    )
+
+reps <- left_join(int_reps,ext_reps, )
+
+pubs %>%
+    dplyr::select(
+        cancer_class, 
+        PUBMEDID, 
+        SNPS, 
+        P.VALUE, 
+        init_sample,
+        wp.p, 
+        wp_gws, 
+        lower_ci_OR, 
+        OR, 
+        upper_ci_OR, 
+        ci_OR_span
+    ) %>%
+    mutate(
+        sig = if_else(
+            P.VALUE >= 5e-08, TRUE, FALSE
+        ),
+        alt_pwr = if_else(
+            wp.p >= 0.8, TRUE, FALSE
+        ),
+        effect = OR-1
+    ) %>% 
+    filter(!is.nan(wp_gws)) %>% 
+    group_by(cancer_class) %>%
+        mutate(
+            # Power = sum(wp_gws)/n(),
+            # Confidence = sum(conf)/n(),
+            Significance = sum(sig)/n(),
+            `Alt Power` = sum(alt_pwr)/n(),
+            `Effect Size` = mean(effect)/max(effect)
+        ) %>% 
+    left_join(grps, by = "cancer_class") %>% 
+    left_join(reps) %>% 
+    # right_join(pm_prs, by = "cancer_class") %>% #count(cancer_class, `PRS Publications`)
+    ungroup() %>% 
+    # distinct(cancer_class, power, confidence) %>% 
+    mutate(
+            cancer_class = case_when(
+            str_detect(cancer_class, "skin_") ~ "Skin (Non-Melanoma)",
+            str_detect(cancer_class, "multiple_") ~ "Multiple Myeloma",
+            str_detect(cancer_class, "unspecified") ~ "Multiple/Unspecified",
+            str_detect(cancer_class, "cns") ~ "CNS",
+            str_detect(cancer_class, "head") ~ "Head/Neck",
+            TRUE ~ str_to_title(cancer_class)
+            ),
+            `Valid Replications (%)\n(External)` = if_else(is.na(`Valid Replications (%)\n(External)`), 0, `Valid Replications (%)\n(External)`),
+    ) %>% 
+    melt(
+        id.vars = "cancer_class",
+        measure.vars = c(
+            "Effect Size",
+            "Power", 
+            "Alt Power",
+            "Confidence", 
+            "Significance",
+            "Valid Replications (%)\n(Internal)",
+            "Valid Replications (%)\n(External)",
+            "PRS Publications"
+            ),
+        value.name = "Score"
+    ) %>% mutate(`Score (%)`= Score * 100) %>% 
+    ggplot(aes(x = variable, y = cancer_class)) +
+        geom_tile(aes(fill = `Score (%)`), colour = "white") + 
+        scale_fill_viridis_c() + #option = 'magma') +
+        theme_minimal() +
+        scale_x_discrete(name = "Criteria") +
+        scale_y_discrete(name = "Cancer Class") +
+        theme(
+            rect = element_rect(fill = "transparent"),
+            axis.text.x = element_text(angle = 45, 
+                                       # vjust = .5, 
+                                       hjust = 1),
+            axis.title.y = element_text(angle = 90),
+            text = element_text(size = 40),
+            legend.key.height = unit(5, "cm"),
+        )
+
+ggsave("/mnt/Projects/gwascat_analysis/reporting/images/heatmap.png", width = 30, height = 20, bg = "transparent")
+```
+
+```{r}
+pubs %>% 
+    filter(SNPS %in% sig_rep_snps$SNPS) %>% 
+    distinct(PUBMEDID) %>% 
+    mutate(
+        pm_url = file.path("https://www.ncbi.nlm.nih.gov/pubmed", PUBMEDID)
+    )
+```
+
+```{r}
+    # Construct query URL using NCBI EUtil API and query pubmed for PMC ids using PMIDs
+source(file.path(rprojroot::find_rstudio_root_file(), "functions", "ncbi_eutil_functions.R"))
+
+id_str <- breast_pubs %>% 
+    filter(SNPS %in% sig_rep_snps$SNPS) %>% 
+    distinct(PUBMEDID) %>% 
+    pull() %>% paste(collapse = ",")
+    
+link_url <- eutil_link_url_generator(dbfrom = "pubmed", db = "pmc", ids = id_str)
+rvest::html()
+id_xml <- read_xml(link_url)
+```
+
+
+
+
+
