@@ -1,0 +1,51 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Meetup//RemoteApi//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-ORIGINAL-URL:https://www.meetup.com/en-AU/Statistical-Society-of-Austra
+ lia-Victorian-Branch/events/263549099/ical/Young+Statisticians+Showcase+
+ 2019.ics
+X-WR-CALNAME:Events - Young Statisticians Showcase 2019.ics
+X-MS-OLK-FORCEINSPECTOROPEN:TRUE
+BEGIN:VTIMEZONE
+TZID:Australia/Melbourne
+TZURL:http://tzurl.org/zoneinfo-outlook/Australia/Melbourne
+X-LIC-LOCATION:Australia/Melbourne
+BEGIN:STANDARD
+TZOFFSETFROM:+1100
+TZOFFSETTO:+1000
+TZNAME:EST
+DTSTART:19700405T030000
+RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1SU
+END:STANDARD
+BEGIN:DAYLIGHT
+TZOFFSETFROM:+1000
+TZOFFSETTO:+1100
+TZNAME:EST
+DTSTART:19701004T020000
+RRULE:FREQ=YEARLY;BYMONTH=10;BYDAY=1SU
+END:DAYLIGHT
+END:VTIMEZONE
+BEGIN:VEVENT
+DTSTAMP:20190813T232534Z
+DTSTART;TZID=Australia/Melbourne:20190924T180000
+DTEND;TZID=Australia/Melbourne:20190924T200000
+STATUS:CONFIRMED
+SUMMARY:Young Statisticians Showcase 2019
+DESCRIPTION:Statistical Society of Australia\, Victorian Branch\nTuesday\
+ , September 24 at 6:00 PM\n\nJoin us for three short talks by current Ph
+ D students Jiadong Mao\, Rushani Wijesuriya and Ravindi Nanayakkara. 6:0
+ 0pm – Talks – Theatre 1\, Basement of...\n\nhttps://www.meetup.com/Stati
+ stical-Society-of-Australia-Victorian-Branch/events/263549099/
+CLASS:PUBLIC
+CREATED:20190729T102138Z
+GEO:-37.81;144.96
+LOCATION:Theatre 1\, Level B1 (207-221 Bouverie St\, Carlton\, VT\, Austr
+ alia)
+URL:https://www.meetup.com/Statistical-Society-of-Australia-Victorian-Bra
+ nch/events/263549099/
+LAST-MODIFIED:20190730T033059Z
+UID:event_263549099@meetup.com
+END:VEVENT
+END:VCALENDAR
