@@ -11,10 +11,7 @@ ch_len <- ensembldb::select(
         keytype = "SEQNAME"
     ) %>%
     filter(
-        stringr::str_detect(SEQNAME, "^[0-9]+|^X$|^Y$|^MT$")
-    ) %>%
-    mutate(
-        SEQNAME = factor(SEQNAME, levels = c(seq(1,22), c("X", "Y","MT")))
+        stringr::str_detect(SEQNAME, "^[0-9]+|^X$|^Y$")
     ) %>%
     arrange(
         SEQNAME
@@ -24,8 +21,18 @@ ch_len <- ensembldb::select(
 # Get cancer classes, write to CSV
 cancer_classes <- readr::read_csv("data/classified_gwas_catalog.csv") %>%
     count(cancer_class) %>%
-    rename("value" = cancer_class, "frequency" = n)
-
-cancer_classes %>%
+    rename("value" = cancer_class, "frequency" = n) %>%
     filter(value != "total") %>%
-    readr::write_csv("data/cancer_class_list.csv")
+    mutate(
+        label = case_when(
+            stringr::str_detect(value, "^cancer") ~ "Unspecified/Multiple",
+            stringr::str_detect(value, "^skin") ~ "Skin (Non-Melanoma)",
+            stringr::str_detect(value, "^head") ~ "Head/Neck",
+            stringr::str_detect(value, "^multiple") ~ "Multiple Myeloma",
+            stringr::str_detect(value, "^cns") ~ "CNS",
+            TRUE ~ stringr::str_to_title(value)
+        )
+    ) %>%
+    arrange(label)
+
+    readr::write_csv(cancer_classes, "data/cancer_class_list.csv")
